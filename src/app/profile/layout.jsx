@@ -11,7 +11,6 @@ const USER_TABS = [
   { href: "/profile/my-requests", label: "درخواست‌های من" },
   { href: "/profile/my-offers", label: "پیشنهادهای من" },
   { href: "/profile/transactions", label: "تراکنش‌ها" },
-  { href: "/profile/top-up", label: "افزایش اعتبار" },
   { href: "/profile/supplier-request", label: "درخواست تامین کننده شدن" },
   { href: "/profile/logout", label: "خروج" },
 ];

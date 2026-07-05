@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import {
   Search,
   MapPin,
@@ -36,7 +36,7 @@ const DEADLINE_OPTIONS = [
   { value: "1year", label: "۱ سال" },
 ];
 
-export default function FilterBar() {
+function FilterBarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -224,6 +224,21 @@ export default function FilterBar() {
         )}
       </div>
     </div>
+  );
+}
+
+// کامپوننت اصلی با مرز Suspense جهت برطرف کردن خطای ساخت بیلد پروداکشن
+export default function FilterBar() {
+  return (
+    <Suspense
+      fallback={
+        <div className="rounded-2xl bg-[#1a2238] p-5 shadow-xl animate-pulse">
+          <div className="h-32 rounded-xl bg-slate-800/50" />
+        </div>
+      }
+    >
+      <FilterBarContent />
+    </Suspense>
   );
 }
 
