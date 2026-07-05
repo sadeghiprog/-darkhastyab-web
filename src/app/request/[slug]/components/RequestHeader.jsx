@@ -1,0 +1,86 @@
+"use client";
+
+import { Layers, PhoneCall, CheckCircle2, CircleSlash } from "lucide-react";
+
+export default function RequestHeader({
+  request,
+  isOwner,
+  checkingAccess,
+  deletingRequest,
+  onSupplyClick,
+  onEdit,
+  onDelete,
+}) {
+  const isExpired = request?.isExpired;
+
+  return (
+    <div className="border-b border-slate-100 bg-gradient-to-l from-cyan-50/80 via-white to-white p-5 md:p-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            {request.category?.name && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1 text-[11px] font-black text-cyan-700">
+                <Layers size={13} />
+                {request.category.name}
+              </span>
+            )}
+
+            {/* status */}
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-black
+              ${
+                isExpired
+                  ? "border-rose-100 bg-rose-50 text-rose-700"
+                  : "border-green-100 bg-green-50 text-green-700"
+              }`}
+            >
+              {isExpired ? (
+                <CircleSlash size={13} />
+              ) : (
+                <CheckCircle2 size={13} />
+              )}
+
+              {isExpired ? "منقضی شده" : "فعال"}
+            </span>
+          </div>
+
+          <h1 className="text-xl font-black leading-9 text-slate-800 md:text-2xl">
+            {request.title}
+          </h1>
+        </div>
+
+        {isOwner ? (
+          <div className="flex gap-3">
+            <button
+              onClick={onEdit}
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:border-cyan-200 hover:text-cyan-700"
+            >
+              ویرایش
+            </button>
+
+            <button
+              onClick={onDelete}
+              disabled={deletingRequest}
+              className="rounded-2xl bg-rose-500 px-5 py-3 text-sm font-black text-white hover:bg-rose-600 disabled:opacity-70"
+            >
+              حذف
+            </button>
+          </div>
+        ) : isExpired ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-3 text-sm font-black text-rose-700">
+            این درخواست منقضی شده
+          </div>
+        ) : (
+          <button
+            onClick={onSupplyClick}
+            disabled={checkingAccess}
+            className="inline-flex items-center gap-2 justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-5 py-3 text-sm font-black text-white disabled:opacity-70"
+          >
+            <PhoneCall size={17} />
+            {checkingAccess ? "در حال بررسی..." : "تامین می‌کنم"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
