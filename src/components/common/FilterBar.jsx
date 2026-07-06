@@ -133,7 +133,7 @@ function FilterBarContent() {
   };
 
   return (
-    <div className="rounded-2xl bg-[#1a2238] p-5 shadow-xl">
+<div className="rounded-2xl bg-[#1a2238] p-5 shadow-xl transform-gpu backface-hidden isolate will-change-transform">
       <div className="flex flex-col gap-4">
         {/* گرید را در موبایل ۲ ستونه و در نمایشگر بزرگ ۵ ستونه می‌کنیم */}
         <div className="grid grid-cols-2 items-end gap-3.5 xl:grid-cols-5">
