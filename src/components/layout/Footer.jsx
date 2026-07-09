@@ -10,6 +10,7 @@ const footerLinks = [
   { href: "/suppliers", label: "تأمین‌کنندگان" },
   { href: "/tariffs", label: "تعرفه‌ها" },
   { href: "/help", label: "راهنما" },
+  { href: "/contact", label: "تماس با ما" },
 ];
 
 export default function Footer() {
@@ -34,7 +35,7 @@ export default function Footer() {
 
                 <div>
                   <h3 className="text-sm font-black text-slate-900 sm:text-base">
-                    بازار درخواست
+                    درخواست‌یاب 
                   </h3>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
                     ارتباط سریع خریدار و تأمین‌کننده، ساده و حرفه‌ای
@@ -79,7 +80,7 @@ export default function Footer() {
 
             {/* copyright */}
             <div className="text-[11px] leading-5 text-slate-500">
-              © {new Date().getFullYear()} بازار درخواست — تمامی حقوق محفوظ است.
+              © {new Date().getFullYear()} درخواست‌یاب — تمامی حقوق محفوظ است.
             </div>
           </div>
         </div>

@@ -1,6 +1,13 @@
 "use client";
 
-import { Layers, PhoneCall, CheckCircle2, CircleSlash } from "lucide-react";
+import {
+  Layers,
+  PhoneCall,
+  CheckCircle2,
+  CircleSlash,
+  User,
+  Clock3,
+} from "lucide-react";
 
 export default function RequestHeader({
   request,
@@ -12,6 +19,9 @@ export default function RequestHeader({
   onDelete,
 }) {
   const isExpired = request?.isExpired;
+  const userName = request?.userName || "کاربر";
+  const daysRemaining =
+    typeof request?.daysRemaining === "number" ? request.daysRemaining : null;
 
   return (
     <div className="border-b border-slate-100 bg-gradient-to-l from-cyan-50/80 via-white to-white p-5 md:p-6">
@@ -25,7 +35,6 @@ export default function RequestHeader({
               </span>
             )}
 
-            {/* status */}
             <span
               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-black
               ${
@@ -47,6 +56,26 @@ export default function RequestHeader({
           <h1 className="text-xl font-black leading-9 text-slate-800 md:text-2xl">
             {request.title}
           </h1>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">
+            <div className="inline-flex items-center gap-1.5">
+              <User size={14} className="text-cyan-600" />
+              <span>کاربر:</span>
+              <span className="font-bold text-slate-700">{userName}</span>
+            </div>
+
+            <div className="inline-flex items-center gap-1.5">
+              <Clock3 size={14} className="text-cyan-600" />
+              <span>زمان باقی‌مانده:</span>
+              <span className="font-bold text-slate-700">
+                {isExpired
+                  ? "منقضی شده"
+                  : daysRemaining !== null
+                  ? `${daysRemaining} روز`
+                  : "نامشخص"}
+              </span>
+            </div>
+          </div>
         </div>
 
         {isOwner ? (

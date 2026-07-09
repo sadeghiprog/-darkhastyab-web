@@ -63,45 +63,49 @@ export default function EditPurchaseRequestPage() {
 
         const request = requestRes.request;
 
-        // پیدا کردن دسته اصلی از روی زیردسته
+        // پیدا کردن دسته اصلی از روی زیردسته با مقایسه ایمن نوع داده (تبدیل به عدد)
         let parentCategory = null;
+        const reqCategoryId = Number(request.categoryId);
 
         for (const cat of mainCats) {
           const foundSub = cat.children?.find(
-            (child) => child.id === request.categoryId
+            (child) => Number(child.id) === reqCategoryId
           );
 
           if (foundSub) {
             parentCategory = cat;
-            setSubCategories(cat.children);
+            setSubCategories(cat.children || []);
             break;
           }
         }
 
         setFormData({
           title: request.title || "",
-          categoryId: parentCategory?.id?.toString() || "",
-          subCategoryId: request.categoryId?.toString() || "",
-          unitId: request.unitId?.toString() || "",
-          quantity: request.quantity?.toString() || "",
-          budgetAmount: request.budgetAmount?.toString() || "",
-          expiresInDays: "3",
-          provinceId: request.provinceId?.toString() || "",
-          cityId: request.cityId?.toString() || "",
+          categoryId: parentCategory ? parentCategory.id.toString() : "",
+          subCategoryId: request.categoryId ? request.categoryId.toString() : "",
+          unitId: request.unitId ? request.unitId.toString() : "",
+          quantity: request.quantity ? request.quantity.toString() : "",
+          budgetAmount: request.budgetAmount ? request.budgetAmount.toString() : "",
+          expiresInDays: request.expiresInDays ? request.expiresInDays.toString() : "3",
+          provinceId: request.provinceId ? request.provinceId.toString() : "",
+          cityId: request.cityId ? request.cityId.toString() : "",
           description: request.description || "",
         });
 
       } catch (err) {
+        console.error(err);
         setError("خطا در دریافت اطلاعات درخواست");
       } finally {
         setInitLoading(false);
       }
     }
 
-    fetchInitialData();
+    if (slug) {
+      fetchInitialData();
+    }
   }, [slug]);
 
-  // دریافت شهرها
+  // دریافت شهرها بر اساس استان انتخابی
   useEffect(() => {
     async function fetchCities() {
       if (!formData.provinceId) {
@@ -113,19 +117,19 @@ export default function EditPurchaseRequestPage() {
         const data = await lookupService.getCities(formData.provinceId);
         setCities(data);
       } catch (err) {
-        console.error("خطا در دریافت شهرها");
+        console.error("خطا در دریافت شهرها", err);
       }
     }
 
     fetchCities();
   }, [formData.provinceId]);
 
-  // تغییر دسته‌بندی
+  // تغییر دسته‌بندی اصلی و خالی کردن زیردسته قبلی
   const handleCategoryChange = (e) => {
     const selectedCatId = e.target.value;
 
     const selectedCategory = categories.find(
-      (cat) => cat.id === parseInt(selectedCatId)
+      (cat) => cat.id.toString() === selectedCatId.toString()
     );
 
     setFormData((prev) => ({
@@ -217,7 +221,7 @@ export default function EditPurchaseRequestPage() {
     setStep((prev) => prev - 1);
   };
 
-  // جلوگیری از submit با enter
+  // جلوگیری از submit با enter در فیلدهای غیر متنی طولانی
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
       e.preventDefault();
@@ -240,7 +244,7 @@ export default function EditPurchaseRequestPage() {
 
       const payload = {
         title: formData.title,
-        categoryId: parseInt(formData.subCategoryId),
+        categoryId: parseInt(formData.subCategoryId), // ارسال شناسه زیردسته به عنوان دسته‌بندی نهایی به بک‌اند
         unitId: parseInt(formData.unitId),
         quantity: parseFloat(formData.quantity),
         budgetAmount: formData.budgetAmount
