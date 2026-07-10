@@ -66,11 +66,15 @@ export default function HorizontalRequestCardPremium({ request }) {
                 <Clock3 size={13} className="text-cyan-600" />
                 <span>انقضا:</span>
                 <span className="font-bold text-slate-700">
+                  
                   {isExpired
                     ? "منقضی شده"
+                    : daysRemaining > 10000
+                    ? "بدون انقضا"
                     : daysRemaining !== null
                     ? `${formatNumber(daysRemaining)} روز`
                     : "نامشخص"}
+
                 </span>
               </div>
             </div>

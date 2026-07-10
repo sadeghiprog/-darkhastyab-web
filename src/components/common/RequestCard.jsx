@@ -57,16 +57,21 @@ export default function RequestCard({ request }) {
               }`}
             >
               {isExpired ? (
-                <>
-                  <CircleSlash size={14} />
-                  <span>منقضی شده</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 size={14} />
-                  <span>{request.daysRemaining} روز تا پایان</span>
-                </>
-              )}
+                  <>
+                    <CircleSlash size={14} />
+                    <span>منقضی شده</span>
+                  </>
+                ) : request.daysRemaining > 10000 ? (
+                  <>
+                    <CheckCircle2 size={14} />
+                    <span>بدون انقضا</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 size={14} />
+                    <span>{request.daysRemaining} روز تا پایان</span>
+                  </>
+                )}
             </div>
           </div>
         </div>

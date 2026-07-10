@@ -202,6 +202,20 @@ export default function EditPurchaseRequestPage() {
       }
     }
 
+    if (currentStep === 4) {
+      const desc = formData.description.trim();
+
+      if (!desc) {
+        setError("لطفاً توضیحات تکمیلی را وارد کنید.");
+        return false;
+      }
+
+      if (desc.length < 10) {
+        setError("توضیحات باید حداقل 10 کاراکتر باشد.");
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -235,7 +249,7 @@ export default function EditPurchaseRequestPage() {
     setError("");
     setSuccessMessage("");
 
-    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3) || !validateStep(4)) {
       return;
     }
 
@@ -575,6 +589,7 @@ export default function EditPurchaseRequestPage() {
                     <option value="7">۷ روز</option>
                     <option value="14">۱۴ روز</option>
                     <option value="30">۳۰ روز</option>
+                    <option value="100000"> بدون انقضا</option>
                   </select>
                 </div>
 

@@ -12,6 +12,7 @@ import {
 export default function RequestHeader({
   request,
   isOwner,
+  isAdmin,
   checkingAccess,
   deletingRequest,
   onSupplyClick,
@@ -22,6 +23,8 @@ export default function RequestHeader({
   const userName = request?.userName || "کاربر";
   const daysRemaining =
     typeof request?.daysRemaining === "number" ? request.daysRemaining : null;
+
+  const canManage = isOwner || isAdmin;
 
   return (
     <div className="border-b border-slate-100 bg-gradient-to-l from-cyan-50/80 via-white to-white p-5 md:p-6">
@@ -36,8 +39,7 @@ export default function RequestHeader({
             )}
 
             <span
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-black
-              ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-black ${
                 isExpired
                   ? "border-rose-100 bg-rose-50 text-rose-700"
                   : "border-green-100 bg-green-50 text-green-700"
@@ -68,21 +70,32 @@ export default function RequestHeader({
               <Clock3 size={14} className="text-cyan-600" />
               <span>زمان باقی‌مانده:</span>
               <span className="font-bold text-slate-700">
-                {isExpired
-                  ? "منقضی شده"
-                  : daysRemaining !== null
-                  ? `${daysRemaining} روز`
-                  : "نامشخص"}
+                {isExpired ? (
+                                  <>
+                                    
+                                    <span>منقضی شده</span>
+                                  </>
+                                ) : daysRemaining > 10000 ? (
+                                  <>
+                                   
+                                    <span>بدون انقضا</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    
+                                    <span>{daysRemaining} روز تا پایان</span>
+                                  </>
+                                )}
               </span>
             </div>
           </div>
         </div>
 
-        {isOwner ? (
+        {canManage ? (
           <div className="flex gap-3">
             <button
               onClick={onEdit}
-              className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 hover:border-cyan-200 hover:text-cyan-700"
+              className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 transition hover:border-cyan-200 hover:text-cyan-700"
             >
               ویرایش
             </button>
@@ -90,7 +103,7 @@ export default function RequestHeader({
             <button
               onClick={onDelete}
               disabled={deletingRequest}
-              className="rounded-2xl bg-rose-500 px-5 py-3 text-sm font-black text-white hover:bg-rose-600 disabled:opacity-70"
+              className="rounded-2xl bg-rose-500 px-5 py-3 text-sm font-black text-white transition hover:bg-rose-600 disabled:opacity-70"
             >
               حذف
             </button>
@@ -103,7 +116,7 @@ export default function RequestHeader({
           <button
             onClick={onSupplyClick}
             disabled={checkingAccess}
-            className="inline-flex items-center gap-2 justify-center rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-5 py-3 text-sm font-black text-white disabled:opacity-70"
+            className="inline-flex justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-5 py-3 text-sm font-black text-white disabled:opacity-70"
           >
             <PhoneCall size={17} />
             {checkingAccess ? "در حال بررسی..." : "تامین می‌کنم"}

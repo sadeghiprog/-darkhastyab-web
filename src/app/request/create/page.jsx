@@ -150,6 +150,19 @@ export default function CreatePurchaseRequestPage() {
         return false;
       }
     }
+    if (currentStep === 4) {
+      const desc = formData.description.trim();
+
+      if (!desc) {
+        setError("لطفاً توضیحات تکمیلی را وارد کنید.");
+        return false;
+      }
+
+      if (desc.length < 10) {
+        setError("توضیحات باید حداقل 10 کاراکتر باشد.");
+        return false;
+      }
+    }
 
     return true;
   };
@@ -182,7 +195,7 @@ export default function CreatePurchaseRequestPage() {
     setSuccessMessage("");
 
     // اعتبارسنجی نهایی تمام مراحل برای اطمینان کلاینت
-    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+    if (!validateStep(1) || !validateStep(2) || !validateStep(3) || !validateStep(4)) {
       return;
     }
 
@@ -195,7 +208,7 @@ export default function CreatePurchaseRequestPage() {
         unitId: parseInt(formData.unitId),
         quantity: parseFloat(formData.quantity),
         budgetAmount: formData.budgetAmount ? parseFloat(formData.budgetAmount) : null,
-        expiresInDays: parseInt(formData.expiresInDays),
+        expiresInDays:     formData.expiresInDays === "0" ? null : parseInt(formData.expiresInDays),
         provinceId: parseInt(formData.provinceId),
         cityId: parseInt(formData.cityId),
         description: formData.description,
@@ -418,6 +431,7 @@ export default function CreatePurchaseRequestPage() {
                     <option value="7">۷ روز</option>
                     <option value="14">۱۴ روز</option>
                     <option value="30">۳۰ روز</option>
+                    <option value="100000">بدون انقضا</option>
                   </select>
                 </div>
               </div>
