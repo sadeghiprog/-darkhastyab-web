@@ -181,7 +181,7 @@ export default function AdminRequestsPage() {
           requests.map((request) => (
             <Link
               key={request.id}
-              href={`/requests/${request.slug}?returnTo=${encodeURIComponent(
+              href={`/request/${request.slug}?returnTo=${encodeURIComponent(
                 currentListUrl
               )}`}
               className="block"
