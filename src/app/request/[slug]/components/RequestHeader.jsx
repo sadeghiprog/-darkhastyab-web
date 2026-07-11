@@ -56,7 +56,7 @@ export default function RequestHeader({
           </div>
 
           <h1 className="text-xl font-black leading-9 text-slate-800 md:text-2xl">
-            {request.title}
+             {request.title}
           </h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-500">

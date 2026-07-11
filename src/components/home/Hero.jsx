@@ -23,9 +23,8 @@ export default function HeroSection() {
       <div className="mx-auto max-w-5xl px-4 py-12 md:py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900 leading-[1.8] md:leading-[1.7]">
-            ثبت درخواست خرید و جستجوی
-            <span className="text-cyan-600"> تأمین‌کننده مناسب </span>
-            برای بازار B2B
+            ارتباط مستقیم خریداران و فروشندگان در
+            <span className="text-cyan-600"> درخواست یاب </span>
           </h1>
 
           <p className="mt-4 text-sm md:text-base leading-7 text-slate-600">
@@ -37,29 +36,29 @@ export default function HeroSection() {
             onSubmit={handleSearch}
             className="mt-6 flex flex-col sm:flex-row gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-2"
           >
-            <div className="flex items-center gap-2 flex-1 rounded-xl bg-white px-3 py-3 border border-slate-200">
-              <Search size={18} className="text-slate-400 shrink-0" />
+            <div className="flex flex-1 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3">
+              <Search size={18} className="shrink-0 text-slate-400" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="مثلاً میلگرد، سیمان، پروفیل..."
-                className="w-full bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400"
+                className="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
               />
             </div>
 
             <button
               type="submit"
-              className="rounded-xl bg-cyan-600 px-5 py-3 text-sm font-bold text-white hover:bg-cyan-700 transition"
+              className="rounded-xl bg-cyan-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-cyan-700"
             >
               جستجو
             </button>
           </form>
 
-          <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2">
+          <div className="mt-4 flex flex-row items-center justify-center gap-2">
             <Link
               href="/request/create"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800 transition w-full sm:w-auto"
+              className="inline-flex w-1/2 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 sm:w-auto"
             >
               <Plus size={16} />
               ثبت درخواست
@@ -67,7 +66,7 @@ export default function HeroSection() {
 
             <Link
               href="/filter"
-              className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-5 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 transition w-full sm:w-auto"
+              className="inline-flex w-1/2 items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 sm:w-auto"
             >
               مشاهده درخواست‌ها
             </Link>
@@ -80,7 +79,7 @@ export default function HeroSection() {
                 key={item}
                 type="button"
                 onClick={() => router.push(`/search?q=${encodeURIComponent(item)}`)}
-                className="rounded-full bg-slate-100 px-3 py-1 text-slate-700 hover:bg-slate-200 transition"
+                className="rounded-full bg-slate-100 px-3 py-1 text-slate-700 transition hover:bg-slate-200"
               >
                 {item}
               </button>

@@ -1,43 +1,88 @@
-"use client";
-
-import React, { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import React from "react";
 import RequestCard from "../../components/common/RequestCard";
 import RequestCard2 from "../../components/common/RequestCard2";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+// دریافت آدرس API از متغیرهای محیطی
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://api.darkhastyab.com";
 
-function SearchResultsContent() {
-  const searchParams = useSearchParams();
-  const q = searchParams.get("q") || "";
-  console.log("/////////////",q);
+// تابع کمکی برای دریافت نتایج جستجو در سمت سرور
+async function getSearchResults(query) {
+  try {
+    const res = await fetch(
+      `${API_BASE}/purchase-requests/search?q=${encodeURIComponent(query)}&limit=15`,
+      { cache: "no-store" } // عدم ذخیره کش برای داینامیک بودن نتایج جستجو
+    );
+    if (!res.ok) throw new Error("خطا در دریافت نتایج جستجو");
+    const data = await res.json();
+    return data.requests || [];
+  } catch (error) {
+    console.error("Search API Error:", error);
+    return [];
+  }
+}
 
-  const [results, setResults] = useState([]);
-  const [latestRequests, setLatestRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+// تابع کمکی برای دریافت جدیدترین درخواست‌ها در سمت سرور (سایدبار)
+async function getLatestRequests() {
+  try {
+    const res = await fetch(
+      `${API_BASE}/purchase-requests?limit=3`,
+      { next: { revalidate: 60 } } // کش کردن ۳ مورد سایدبار به مدت ۶۰ ثانیه برای فشار کمتر به دیتابیس
+    );
+    if (!res.ok) throw new Error("خطا در دریافت جدیدترین درخواست‌ها");
+    const data = await res.json();
+    return data.requests || [];
+  } catch (error) {
+    console.error("Latest Requests API Error:", error);
+    return [];
+  }
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // ۱. دریافت نتایج جستجو
-        const searchRes = await fetch(`${API_BASE}/purchase-requests/search?q=${encodeURIComponent(q)}&limit=15`);
-        const searchData = await searchRes.json();
-        setResults(searchData.requests || []);
+// تولید متادیتای پویا جهت سئوی قوی در نتایج گوگل
+export async function generateMetadata({ searchParams }) {
+  const resolvedParams = await searchParams;
+  const q = resolvedParams.q || "";
 
-        // ۲. دریافت جدیدترین‌ها برای سایدبار
-        const latestRes = await fetch(`${API_BASE}/purchase-requests?limit=3`);
-        const latestData = await latestRes.json();
-        setLatestRequests(latestData.requests || []);
-      } catch (error) {
-        console.error("Search Page Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const title = q 
+    ? `درخواست‌های خرید و تامین ${q} | درخواست‌یاب` 
+    : "جستجوی درخواست‌های خرید و استعلام قیمت | درخواست‌یاب";
 
-    fetchData();
-  }, [q]);
+  const description = q
+    ? `جدیدترین درخواست‌های خرید، تامین و استعلام قیمت مرتبط با "${q}". برای مشاهده جزئیات، اطلاعات تماس و ثبت پیشنهاد کلیک کنید.`
+    : "جستجو و فیلتر کردن درخواست‌های خرید و استعلام قیمت کالاها در سراسر ایران در سامانه درخواست‌یاب.";
+
+  const canonicalUrl = `https://darkhastyab.com/search${q ? `?q=${encodeURIComponent(q)}` : ""}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      siteName: "درخواست‌یاب",
+      locale: "fa_IR",
+      type: "website",
+    },
+    robots: {
+      index: true,
+      follow: true,
+    }
+  };
+}
+
+// کامپوننت اصلی صفحه (Server Component)
+export default async function SearchPage({ searchParams }) {
+  const resolvedParams = await searchParams;
+  const q = resolvedParams.q || "";
+
+  // اجرای موازی ریکوئست‌ها در سمت سرور
+  const [results, latestRequests] = await Promise.all([
+    getSearchResults(q),
+    getLatestRequests(),
+  ]);
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8" dir="rtl">
@@ -58,13 +103,7 @@ function SearchResultsContent() {
               </span>
             </div>
 
-            {loading ? (
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-64 animate-pulse rounded-3xl bg-white" />
-                ))}
-              </div>
-            ) : results.length > 0 ? (
+            {results.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
                 {results.map((req) => (
                   <RequestCard key={req.id} request={req} />
@@ -72,7 +111,10 @@ function SearchResultsContent() {
               </div>
             ) : (
               <div className="bg-white rounded-3xl p-20 text-center border border-dashed border-slate-300">
-                <p className="text-slate-400 font-bold">متأسفانه موردی یافت نشد.</p>
+                <h2 className="text-slate-600 font-bold text-lg mb-2">موردی یافت نشد</h2>
+                <p className="text-slate-400 text-sm">
+                  متأسفانه درخواستی برای عبارت &quot;{q}&quot; پیدا نکردیم. می‌توانید درخواست جدیدی ثبت کنید.
+                </p>
               </div>
             )}
           </main>
@@ -81,22 +123,18 @@ function SearchResultsContent() {
           <aside className="flex flex-col gap-6 xl:col-span-3">
             <h2 className="text-xl font-black text-slate-800">جدیدترین درخواست‌ها</h2>
             <div className="flex flex-col gap-4">
-              {latestRequests.map((req) => (
-                <RequestCard2 key={req.id} request={req} />
-              ))}
+              {latestRequests.length > 0 ? (
+                latestRequests.map((req) => (
+                  <RequestCard2 key={req.id} request={req} />
+                ))
+              ) : (
+                <p className="text-slate-400 text-xs">درخواستی موجود نیست.</p>
+              )}
             </div>
           </aside>
 
         </div>
       </div>
     </div>
-  );
-}
-
-export default function SearchPage() {
-  return (
-    <Suspense fallback={<div className="p-20 text-center">در حال بارگذاری...</div>}>
-      <SearchResultsContent />
-    </Suspense>
   );
 }

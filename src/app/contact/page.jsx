@@ -83,11 +83,11 @@ export default function ContactPage() {
                 <div>
                   <p className="text-xs font-bold text-slate-500">ایمیل</p>
                   <a
-                    href="mailto:info@test-darkhastyab.ir"
+                    href="darkhastyab@gmail.com"
                     dir="ltr"
                     className="mt-1 block break-all text-sm font-semibold text-slate-900 transition hover:text-sky-700 md:text-base"
                   >
-                    info@test-darkhastyab.ir
+                    darkhastyab@gmail.com
                   </a>
                 </div>
               </div>
@@ -102,7 +102,7 @@ export default function ContactPage() {
                     dir="ltr"
                     className="mt-1 text-sm font-semibold text-slate-900 md:text-base"
                   >
-                    1234567890
+                    5551955134
                   </p>
                 </div>
               </div>
@@ -144,7 +144,7 @@ export default function ContactPage() {
                     تماس مستقیم
                   </a>
                   <a
-                    href="mailto:info@test-darkhastyab.ir"
+                    href="darkhastyab@gmail.com"
                     className="rounded-full border border-white/20 bg-transparent px-4 py-2 text-sm font-bold text-white transition hover:bg-white/10"
                   >
                     ارسال ایمیل
