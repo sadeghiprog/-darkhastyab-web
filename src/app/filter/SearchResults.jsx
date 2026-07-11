@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState, Suspense } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import FilterBar from "../../components/common/FilterBar";
 import RequestCard from "../../components/common/RequestCard";
@@ -18,93 +18,150 @@ function buildPageTitle(categoryName, provinceName) {
   }
 
   if (provinceName) {
-    return `درخواست های ${provinceName}`;
+    return `درخواست های خرید در ${provinceName}`;
   }
 
   return "درخواست های خرید";
 }
 
-function SearchResults() {
+function getRequests(data) {
+  if (Array.isArray(data?.requests)) {
+    return data.requests;
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
+
+  return [];
+}
+
+function getTotal(data, requests) {
+  const candidates = [
+    data?.total,
+    data?.count,
+    data?.totalCount,
+    data?.pagination?.total,
+    data?.pagination?.totalCount,
+    data?.meta?.total,
+    data?.meta?.totalCount,
+  ];
+
+  const total = candidates.find(
+    (value) =>
+      value !== null &&
+      value !== undefined &&
+      value !== "" &&
+      Number.isFinite(Number(value))
+  );
+
+  return total !== undefined ? Number(total) : requests.length;
+}
+
+function SearchResults({
+  initialRequests = [],
+  initialTotal = 0,
+  initialCategoryName = "",
+  initialProvinceName = "",
+  initialLatestRequests = [],
+}) {
   const searchParams = useSearchParams();
   const queryString = searchParams.toString();
 
-  const [filteredRequests, setFilteredRequests] = useState([]);
-  const [latestRequests, setLatestRequests] = useState([]);
-  const [activeCategoryName, setActiveCategoryName] = useState("");
-  const [activeProvinceName, setActiveProvinceName] = useState("");
-  const [loadingFiltered, setLoadingFiltered] = useState(true);
-  const [loadingLatest, setLoadingLatest] = useState(true);
+  const [filteredRequests, setFilteredRequests] = useState(initialRequests);
+  const [total, setTotal] = useState(initialTotal);
+  const [latestRequests, setLatestRequests] = useState(initialLatestRequests);
+
+  const [activeCategoryName, setActiveCategoryName] = useState(
+    initialCategoryName
+  );
+
+  const [activeProvinceName, setActiveProvinceName] = useState(
+    initialProvinceName
+  );
+
+  const [loadingFiltered, setLoadingFiltered] = useState(false);
+  const [loadingLatest, setLoadingLatest] = useState(false);
 
   const apiQueryString = useMemo(() => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(queryString);
 
-    searchParams.forEach((value, key) => {
-      if (value && value.trim() !== "") {
-        params.set(key, value);
+    for (const [key, value] of [...params.entries()]) {
+      if (!value || value.trim() === "") {
+        params.delete(key);
       }
-    });
+    }
 
     params.set("page", "1");
     params.set("limit", "20");
 
     return params.toString();
-  }, [queryString, searchParams]);
+  }, [queryString]);
 
   useEffect(() => {
+    setFilteredRequests(initialRequests);
+    setTotal(initialTotal);
+    setActiveCategoryName(initialCategoryName);
+    setActiveProvinceName(initialProvinceName);
+  }, [
+    initialRequests,
+    initialTotal,
+    initialCategoryName,
+    initialProvinceName,
+  ]);
+
+  useEffect(() => {
+    setLatestRequests(initialLatestRequests);
+  }, [initialLatestRequests]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
     const fetchFilteredRequests = async () => {
       setLoadingFiltered(true);
 
       try {
         const url = `${API_BASE}/purchase-requests?${apiQueryString}`;
-        const res = await fetch(url, { cache: "no-store" });
 
-        if (!res.ok) {
-          throw new Error(`Filtered requests fetch failed: ${res.status}`);
+        const response = await fetch(url, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Filtered requests fetch failed with status ${response.status}`
+          );
         }
 
-        const data = await res.json();
+        const data = await response.json();
+        const requests = getRequests(data);
 
-        setFilteredRequests(Array.isArray(data?.requests) ? data.requests : []);
+        setFilteredRequests(requests);
+        setTotal(getTotal(data, requests));
         setActiveCategoryName(data?.activeCategoryName || "");
         setActiveProvinceName(data?.activeProvinceName || "");
       } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+
         console.error("Filtered requests error:", error);
-        setFilteredRequests([]);
-        setActiveCategoryName("");
-        setActiveProvinceName("");
+
+        // اطلاعات رندرشده سمت سرور را در صورت خطای موقت حذف نمی‌کنیم.
       } finally {
-        setLoadingFiltered(false);
+        if (!controller.signal.aborted) {
+          setLoadingFiltered(false);
+        }
       }
     };
 
     fetchFilteredRequests();
-  }, [queryString, apiQueryString]);
 
-  useEffect(() => {
-    const fetchLatestRequests = async () => {
-      setLoadingLatest(true);
-
-      try {
-        const url = `${API_BASE}/purchase-requests?limit=3`;
-        const res = await fetch(url, { cache: "no-store" });
-
-        if (!res.ok) {
-          throw new Error(`Latest requests fetch failed: ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        setLatestRequests(Array.isArray(data?.requests) ? data.requests : []);
-      } catch (error) {
-        console.error("Latest requests error:", error);
-        setLatestRequests([]);
-      } finally {
-        setLoadingLatest(false);
-      }
+    return () => {
+      controller.abort();
     };
-
-    fetchLatestRequests();
-  }, []);
+  }, [apiQueryString]);
 
   const pageTitle = useMemo(() => {
     return buildPageTitle(activeCategoryName, activeProvinceName);
@@ -120,31 +177,51 @@ function SearchResults() {
             </section>
 
             <section className="flex flex-col gap-6">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <h1 className="text-2xl font-black text-slate-800">
                   {pageTitle}
                 </h1>
 
-                <span className="rounded-full border border-slate-200 bg-white px-4 py-1 text-sm font-medium text-slate-500">
-                  {filteredRequests.length} مورد
+                <span
+                  className="shrink-0 rounded-full border border-slate-200 bg-white px-4 py-1 text-sm font-medium text-slate-500"
+                  aria-live="polite"
+                >
+                  {loadingFiltered && filteredRequests.length === 0
+                    ? "در حال بارگذاری..."
+                    : `${total} مورد`}
                 </span>
               </div>
 
-              {loadingFiltered ? (
+              {loadingFiltered && filteredRequests.length === 0 ? (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
-                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                  {[1, 2, 3, 4, 5, 6].map((item) => (
                     <div
-                      key={i}
+                      key={item}
                       className="h-[400px] animate-pulse rounded-3xl bg-white"
                     />
                   ))}
                 </div>
               ) : filteredRequests.length > 0 ? (
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
-                  {filteredRequests.map((req) => (
-                    <RequestCard key={req.id} request={req} />
-                  ))}
-                </div>
+                <>
+                  <div
+                    className={`grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3 ${
+                      loadingFiltered ? "opacity-60" : ""
+                    }`}
+                  >
+                    {filteredRequests.map((request) => (
+                      <RequestCard
+                        key={request.id}
+                        request={request}
+                      />
+                    ))}
+                  </div>
+
+                  {loadingFiltered && (
+                    <p className="text-center text-sm text-slate-400">
+                      در حال به‌روزرسانی نتایج...
+                    </p>
+                  )}
+                </>
               ) : (
                 <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-10 text-center">
                   <p className="font-bold text-slate-400">
@@ -157,22 +234,25 @@ function SearchResults() {
 
           <aside className="flex flex-col gap-6 xl:col-span-3">
             <h2 className="text-2xl font-black text-slate-800">
-              جدیدترین ها
+              جدیدترین‌ها
             </h2>
 
-            {loadingLatest ? (
+            {loadingLatest && latestRequests.length === 0 ? (
               <div className="flex flex-col gap-6">
-                {[1, 2, 3].map((i) => (
+                {[1, 2, 3].map((item) => (
                   <div
-                    key={i}
+                    key={item}
                     className="h-[320px] animate-pulse rounded-3xl bg-white"
                   />
                 ))}
               </div>
             ) : latestRequests.length > 0 ? (
               <div className="flex flex-col gap-6">
-                {latestRequests.map((req) => (
-                  <RequestCard2 key={req.id} request={req} />
+                {latestRequests.map((request) => (
+                  <RequestCard2
+                    key={request.id}
+                    request={request}
+                  />
                 ))}
               </div>
             ) : (
@@ -187,10 +267,16 @@ function SearchResults() {
   );
 }
 
-export default function SearchPage() {
+export default function SearchPage(props) {
   return (
-    <Suspense fallback={<div className="p-20 text-center">در حال بارگذاری...</div>}>
-      <SearchResults />
+    <Suspense
+      fallback={
+        <div className="p-20 text-center">
+          در حال بارگذاری...
+        </div>
+      }
+    >
+      <SearchResults {...props} />
     </Suspense>
   );
 }
