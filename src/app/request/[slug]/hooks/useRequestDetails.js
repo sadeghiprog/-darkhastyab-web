@@ -27,10 +27,30 @@ export default function useRequestDetails(slug) {
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(false);
 
+  const [actionModal, setActionModal] = useState({
+  open: false,
+  hasAccess: false,
+  hasCredit: false,
+  isSupplier: false,
+});
+const [requestContactLoading, setRequestContactLoading] = useState(false);
+
+const closeActionModal = () => {
+  setActionModal({
+    open: false,
+    hasAccess: false,
+    hasCredit: false,
+    isSupplier: false,
+  });
+};
+
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 50000);
   };
+
+
 
   const isLoggedIn = !!currentUser?.id;
   const isOwner =
@@ -40,59 +60,131 @@ export default function useRequestDetails(slug) {
   const isAdmin = isLoggedIn && currentUser?.status === "ADMIN";
 
   const handleSupplyClick = async () => {
-    if (!isLoggedIn) {
-      authSession.setRedirectAfterLogin(
-       window.location.pathname + window.location.search
-       );
-      router.push("/auth/login");
+  if (!isLoggedIn) {
+    authSession.setRedirectAfterLogin(
+      window.location.pathname + window.location.search
+    );
+    router.push("/auth/login");
+    return;
+  }
+
+  try {
+    setCheckingAccess(true);
+
+    const res = await fetch(`${API_BASE}/supply-offer/check/${slug}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+
+    if (!res.ok) {
+      showToast({
+        title: "خطا",
+        text: data.message || "خطا در بررسی دسترسی",
+      });
       return;
     }
 
+    setActionModal({
+      open: true,
+      hasAccess: !!data.hasAccess,
+      hasCredit: !!data.hasCredit,
+      isSupplier: !!data.isSupplier,
+    });
+  } catch {
+    showToast({
+      title: "خطا",
+      text: "برقراری ارتباط با سرور با خطا مواجه شد.",
+    });
+  } finally {
+    setCheckingAccess(false);
+  }
+};
+
+const handleOpenSupplyModal = () => {
+  if (!actionModal.isSupplier) {
+    showToast(supplyMessages.notSupplier);
+    return;
+  }
+
+  if (!actionModal.hasAccess && !actionModal.hasCredit) {
+    showToast(supplyMessages.noCredit);
+    return;
+  }
+
+  closeActionModal();
+  setShowOfferModal(true);
+};
+
+
+const handleRequestContactClick = async () => {
+  if (!isLoggedIn) {
+    authSession.setRedirectAfterLogin(
+      window.location.pathname + window.location.search
+    );
+    router.push("/auth/login");
+    return;
+  }
+
+  if (!actionModal.hasAccess && !actionModal.hasCredit) {
+    showToast(supplyMessages.noCreditForCall || supplyMessages.noCredit);
+    return;
+  }
+
+  try {
+    setRequestContactLoading(true);
+
+    const res = await fetch(`${API_BASE}/supply-offer/access/${slug}`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    let data = {};
     try {
-      setCheckingAccess(true);
-
-      const res = await fetch(`${API_BASE}/supply-offer/check/${slug}`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      let data = {};
-      try {
-        data = await res.json();
-      } catch {
-        data = {};
-      }
-
-      if (!res.ok) {
-        showToast({
-          title: "خطا",
-          text: data.message || "خطا در بررسی دسترسی",
-        });
-        return;
-      }
-
-      if (!data.isSupplier) {
-        showToast(supplyMessages.notSupplier);
-        return;
-      }
-
-      if (!data.hasCredit) {
-        showToast(supplyMessages.noCredit);
-        return;
-      }
-
-      if (window.confirm(supplyMessages.confirmUseCredit.text)) {
-        setShowOfferModal(true);
-      }
+      data = await res.json();
     } catch {
+      data = {};
+    }
+
+    if (!res.ok) {
+      if (data.message === "NO_CREDIT" || data.message === "NO_WALLET") {
+        showToast(supplyMessages.noCreditForCall || supplyMessages.noCredit);
+        return;
+      }
+
       showToast({
         title: "خطا",
-        text: "برقراری ارتباط با سرور با خطا مواجه شد.",
+        text: data.message || "خطا در دریافت اطلاعات تماس",
       });
-    } finally {
-      setCheckingAccess(false);
+      return;
     }
-  };
+
+    closeActionModal();
+
+    const name = data?.contactName || request?.userName || "—";
+    const phone = data?.contactPhone || "—";
+
+    showToast({
+      title: "اطلاعات تماس",
+      text: `نام خریدار: ${name}\nشماره تماس: ${phone}`,
+    });
+  } catch {
+    showToast({
+      title: "خطا",
+      text: "ارتباط با سرور برقرار نشد",
+    });
+  } finally {
+    setRequestContactLoading(false);
+  }
+};
+
+
 
   const submitSupply = async (form) => {
     try {
@@ -363,32 +455,38 @@ export default function useRequestDetails(slug) {
   const goToEdit = () => router.push(`/request/${slug}/edit`);
 
   return {
-    request,
-    loadingRequest,
-    currentUser,
-    loadingUser,
-    latestRequests,
-    loadingLatest,
-    adminNote,
-    setAdminNote,
-    updatingStatus,
-    deletingRequest,
-    offers,
-    loadingOffers,
-    contactLoadingId,
-    toast,
-    setToast,
-    showOfferModal,
-    setShowOfferModal,
-    checkingAccess,
-    isLoggedIn,
-    isOwner,
-    isAdmin,
-    handleSupplyClick,
-    submitSupply,
-    handleContactClick,
-    updatePublishStatus,
-    deleteRequest,
-    goToEdit,
-  };
+  request,
+  loadingRequest,
+  currentUser,
+  loadingUser,
+  latestRequests,
+  loadingLatest,
+  adminNote,
+  setAdminNote,
+  updatingStatus,
+  deletingRequest,
+  offers,
+  loadingOffers,
+  contactLoadingId,
+  toast,
+  setToast,
+  showOfferModal,
+  setShowOfferModal,
+  checkingAccess,
+  isLoggedIn,
+  isOwner,
+  isAdmin,
+  handleSupplyClick,
+  submitSupply,
+  handleContactClick,
+  updatePublishStatus,
+  deleteRequest,
+  goToEdit,
+  actionModal,
+  setActionModal,
+  closeActionModal,
+  handleOpenSupplyModal,
+  handleRequestContactClick,
+  requestContactLoading,
+};
 }
