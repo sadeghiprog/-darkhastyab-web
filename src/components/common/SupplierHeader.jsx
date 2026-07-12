@@ -14,7 +14,7 @@ export default function SupplierHeader({ supplier }) {
   const baseAvatar = process.env.NEXT_PUBLIC_AVATAR_URL;
   const avatarSrc = supplier.profile?.avatarUrl
     ? `${baseAvatar}${supplier.profile?.avatarUrl}`
-    : "/avatar.png";
+    : `${baseAvatar}/uploads/avatars/avatar.png`;
 
   useEffect(() => {
     if (supplier) {
@@ -95,6 +95,8 @@ export default function SupplierHeader({ supplier }) {
     }
   }
 
+  const companyName = supplier.profile?.companyName || supplier.name;
+
   return (
     <div className="relative overflow-hidden bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm transition-all duration-300 hover:shadow-md">
       {/* دکوراسیون پس‌زمینه ملایم */}
@@ -109,14 +111,14 @@ export default function SupplierHeader({ supplier }) {
             <img
               src={avatarSrc}
               className="relative w-24 h-24 rounded-full object-cover border-2 border-white shadow-inner bg-slate-50"
-              alt={supplier.name}
+              alt={`لوگو شرکت ${companyName}`}
             />
           </div>
 
           <div className="text-center sm:text-right space-y-1.5">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
-                {supplier.profile?.companyName || supplier.name}
+                {companyName}
               </h1>
               {supplier.profile?.companyRegNo && (
                 <span className="bg-slate-100 text-slate-600 text-xs px-2.5 py-0.5 rounded-full font-medium">
@@ -126,7 +128,10 @@ export default function SupplierHeader({ supplier }) {
             </div>
 
             {/* امتیازدهی عمومی */}
-            <div className="flex items-center justify-center sm:justify-start gap-2">
+            <div 
+              className="flex items-center justify-center sm:justify-start gap-2"
+              aria-label={`امتیاز میانگین ${supplier.rating?.avg || 0} از ۵ براساس ${supplier.rating?.count || 0} رای`}
+            >
               <RatingStars rating={supplier.rating?.avg || 0} />
               <span className="text-xs text-slate-400 font-medium">
                 ({supplier.rating?.count || 0} امتیاز خریداران)
@@ -154,15 +159,21 @@ export default function SupplierHeader({ supplier }) {
                 <p className="text-xs text-slate-400 mb-1.5 text-right">
                   ثبت امتیاز شما به این تامین‌کننده:
                 </p>
-                <div className="flex items-center justify-center sm:justify-start gap-1">
+                <div 
+                  className="flex items-center justify-center sm:justify-start gap-1"
+                  role="group" 
+                  aria-label="رتبه‌دهی به تامین‌کننده"
+                >
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
+                      type="button"
                       disabled={ratingLoading}
                       onMouseEnter={() => setHoveredStar(star)}
                       onMouseLeave={() => setHoveredStar(0)}
                       onClick={() => submitRating(star)}
                       className="transition transform active:scale-95 hover:scale-110 focus:outline-none disabled:opacity-50"
+                      aria-label={`ثبت امتیاز ${star} ستاره`}
                     >
                       <svg
                         className={`w-6 h-6 transition-colors duration-150 ${
@@ -204,6 +215,7 @@ export default function SupplierHeader({ supplier }) {
             </div>
           ) : (
             <button
+              type="button"
               onClick={handleContact}
               disabled={loading}
               className="relative w-full sm:w-auto group overflow-hidden bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-6 py-3 rounded-2xl text-sm transition-all duration-300 active:scale-98 shadow-sm hover:shadow-cyan-100 hover:shadow-lg disabled:opacity-75 flex items-center justify-center gap-2 mx-auto"

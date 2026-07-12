@@ -9,6 +9,7 @@ import { profileService } from "../../../services/profile.service";
 
 const API_BASE = process.env.NEXT_PUBLIC_AVATAR_URL || "";
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
+const MAX_RESUME_LENGTH = 500;
 
 function toAbsoluteUrl(url) {
   if (!url) return "";
@@ -28,7 +29,7 @@ export default function EditProfilePage() {
     companyName: "",
     companyRegNo: "",
     address: "",
-    
+    resume: "",
   });
 
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -36,8 +37,6 @@ export default function EditProfilePage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
   const [error, setError] = useState("");
-
-
 
   useEffect(() => {
     let mounted = true;
@@ -59,10 +58,10 @@ export default function EditProfilePage() {
           companyName: nestedProfile?.companyName || "",
           companyRegNo: nestedProfile?.companyRegNo || "",
           address: nestedProfile?.address || "",
+          resume: nestedProfile?.resume || "",
         });
 
         if (nestedProfile?.avatarUrl) {
-          
           setAvatarPreview(toAbsoluteUrl(nestedProfile.avatarUrl));
         }
       } catch (err) {
@@ -94,6 +93,10 @@ export default function EditProfilePage() {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    if (name === "resume" && value.length > MAX_RESUME_LENGTH) {
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -105,12 +108,6 @@ export default function EditProfilePage() {
     e.target.value = "";
 
     if (!file) return;
-
-    console.log("[avatar] selected file:", {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-    });
 
     if (!file.type.startsWith("image/")) {
       setError("فقط فایل تصویری مجاز است.");
@@ -130,9 +127,7 @@ export default function EditProfilePage() {
     setAvatarUploading(true);
 
     try {
-      console.log("[avatar] start upload request");
       const result = await profileService.uploadAvatar(file);
-      console.log("[avatar] upload response:", result);
 
       const serverAvatarUrl =
         result?.avatarUrl ||
@@ -142,10 +137,10 @@ export default function EditProfilePage() {
       if (serverAvatarUrl) {
         setAvatarPreview(toAbsoluteUrl(serverAvatarUrl));
       } else {
-        console.warn("[avatar] response did not include avatar url");
+        setAvatarPreview(previousPreview);
+        setError("آدرس آواتار از سرور دریافت نشد.");
       }
     } catch (err) {
-      console.error("[avatar] upload failed:", err);
       setAvatarPreview(previousPreview);
       setError(err?.message || "خطا در آپلود آواتار");
     } finally {
@@ -156,6 +151,11 @@ export default function EditProfilePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (formData.resume.length > MAX_RESUME_LENGTH) {
+      setError(`رزومه نباید بیشتر از ${MAX_RESUME_LENGTH} کاراکتر باشد.`);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -169,28 +169,28 @@ export default function EditProfilePage() {
   };
 
   if (initLoading) {
-    return <div className="text-center p-10">در حال بارگذاری اطلاعات...</div>;
+    return <div className="p-10 text-center">در حال بارگذاری اطلاعات...</div>;
   }
 
   return (
-    <main className="max-w-2xl mx-auto p-4">
+    <main className="mx-auto max-w-2xl p-4">
       <Card>
-        <h1 className="text-2xl font-bold mb-6 text-center">
+        <h1 className="mb-6 text-center text-2xl font-bold">
           ویرایش اطلاعات حساب
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex flex-col items-center gap-3">
             <label className="cursor-pointer">
-              <div className="w-28 h-28 rounded-full overflow-hidden border border-gray-300 bg-gray-50">
+              <div className="h-28 w-28 overflow-hidden rounded-full border border-gray-300 bg-gray-50">
                 {avatarPreview ? (
                   <img
                     src={avatarPreview}
                     alt="avatar preview"
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm text-center px-2">
+                  <div className="flex h-full w-full items-center justify-center px-2 text-center text-sm text-gray-400">
                     انتخاب عکس
                   </div>
                 )}
@@ -206,7 +206,9 @@ export default function EditProfilePage() {
             </label>
 
             <span className="text-xs text-gray-500">
-              {avatarUploading ? "در حال آپلود..." : "برای تغییر عکس روی آن کلیک کنید"}
+              {avatarUploading
+                ? "در حال آپلود..."
+                : "برای تغییر عکس روی آن کلیک کنید"}
             </span>
           </div>
 
@@ -254,17 +256,57 @@ export default function EditProfilePage() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="address"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
               آدرس
             </label>
 
             <textarea
+              id="address"
               name="address"
               value={formData.address}
               onChange={handleChange}
-              rows="3"
-              className="w-full p-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
+              className="w-full rounded-lg border p-2 outline-none focus:ring-2 focus:ring-blue-500"
             />
+          </div>
+
+          <div>
+            <div className="mb-1 flex items-center justify-between gap-3">
+              <label
+                htmlFor="resume"
+                className="block text-sm font-medium text-gray-700"
+              >
+                رزومه
+              </label>
+
+              <span
+                className={`text-xs ${
+                  formData.resume.length >= MAX_RESUME_LENGTH
+                    ? "text-red-500"
+                    : "text-gray-500"
+                }`}
+              >
+                {formData.resume.length} / {MAX_RESUME_LENGTH}
+              </span>
+            </div>
+
+            <textarea
+              id="resume"
+              name="resume"
+              value={formData.resume}
+              onChange={handleChange}
+              rows={7}
+              maxLength={MAX_RESUME_LENGTH}
+              placeholder="سوابق کاری، مهارت‌ها، تخصص‌ها و تجربیات خود را بنویسید..."
+              className="w-full resize-y rounded-lg border p-2 outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            <p className="mt-1 text-xs text-gray-500">
+              حداکثر 500 کاراکتر
+            </p>
           </div>
 
           <Alert message={error} />
