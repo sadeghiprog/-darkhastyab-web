@@ -12,6 +12,7 @@ const USER_TABS = [
   { href: "/profile/my-offers", label: "پیشنهادهای من" },
   { href: "/profile/transactions", label: "تراکنش‌ها" },
   { href: "/profile/supplier-request", label: "درخواست تامین کننده شدن" },
+  { href: "/profile/notification-settings", label: "تنظیمات نوتیفیکیشن" },
   { href: "/profile/logout", label: "خروج" },
 ];
 
@@ -27,6 +28,7 @@ const ADMIN_TABS = [
   { href: "/profile/admin/users", label: "همه کاربران" },
   { href: "/profile/admin/tariffs", label: " تعرفه ها" },
   { href: "/profile/admin/transactions", label: "تراکنش ها" },
+  { href: "/profile/notification-settings", label: "تنظیمات نوتیفیکیشن" },
   { href: "/profile/logout", label: "خروج" },
 ];
 

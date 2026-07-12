@@ -51,7 +51,7 @@ export default function Footer() {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900"
               >
                 <Phone size={15} className="text-slate-500" />
-                <span>۰۲۱-۹۱۰۰۰۰۰۰</span>
+                <span>پشتیبانی 09190555510</span>
               </a>
             </div>
           </div>
