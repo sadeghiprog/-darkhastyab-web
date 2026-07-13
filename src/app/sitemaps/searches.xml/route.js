@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   // این مسیر را با route واقعی backend خودت یکی کن
   const data = await fetchJson(`${apiUrl}/purchase-requests/seo-landings`, {
-    searches: [],
+    searches: [],cache: "no-store",
   });
 
   const searches = Array.isArray(data?.searches) ? data.searches : [];

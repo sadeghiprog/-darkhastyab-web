@@ -7,7 +7,7 @@ export async function GET() {
 
   const data = await fetchJson(
     `${apiUrl}/purchase-requests/request_sitemap`,
-    { requests: [] }
+    { requests: [],cache: "no-store", }
   );
   console.log("eeeeeeeeeee",data)
   

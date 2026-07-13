@@ -14,6 +14,7 @@ export async function GET() {
     searches: [],
     filters: [],
     filtersWithHits: [],
+    cache: "no-store",
   });
 
   console.log("FILTER SITEMAP API RESPONSE:", JSON.stringify(data, null, 2));

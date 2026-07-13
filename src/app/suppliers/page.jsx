@@ -34,14 +34,21 @@ export default function SuppliersPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-right" dir="rtl">
+      {/* افزودن متادیتای پویا در سمت کلاینت برای مرورگرها */}
+      <head>
+        <title>{`لیست تأمین‌کنندگان برتر درخاست‌یاب | صفحه ${page}`}</title>
+        <meta name="description" content="شبکه تأمین‌کنندگان و تولیدکنندگان برتر بازار . با ثبت‌نام به عنوان تأمین‌کننده، مستقیماً به درخواست‌های خرید پاسخ دهید." />
+        <link rel="canonical" href={`https://darkhastyab.com/suppliers?page=${page}`} />
+        <meta name="robots" content="index, follow" />
+      </head>
+
       {showHero && (
         <section className="relative overflow-hidden bg-slate-50 border-b border-gray-200/80">
-          {/* هاله نوری بسیار کم‌رنگ آبی در پس‌زمینه سفید/خاکستری */}
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05),transparent_70%)]" />
           
           <div className="relative max-w-4xl mx-auto px-6 py-6 md:py-8 flex flex-col items-center text-center">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-600 border border-blue-100">
-              شبکه تأمین‌کنندگان بازار B2B
+             درخاست‌یاب شبکه تأمین‌کنندگان بازار 
             </span>
 
             <h1 className="mt-3 text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">
@@ -101,7 +108,7 @@ export default function SuppliersPage() {
             {/* بخش پیجینیشن کامپکت */}
             <div className="mt-6 flex items-center justify-center gap-2">
               <button
-                onClick={() => setPage((prev) => prev - 1)}
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={page === 1}
                 className="h-8 px-2.5 rounded-lg border border-gray-300 bg-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
               >
@@ -128,7 +135,7 @@ export default function SuppliersPage() {
               </div>
 
               <button
-                onClick={() => setPage((prev) => prev + 1)}
+                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={page === totalPages}
                 className="h-8 px-2.5 rounded-lg border border-gray-300 bg-white text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
               >

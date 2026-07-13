@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   // این endpoint نمونه است. با API واقعی خودت جایگزین کن.
   const data = await fetchJson(`${apiUrl}/admin/suppliers`, {
-    suppliers: [],
+    suppliers: [],cache: "no-store",
   });
 
   const suppliers = Array.isArray(data?.suppliers) ? data.suppliers : [];

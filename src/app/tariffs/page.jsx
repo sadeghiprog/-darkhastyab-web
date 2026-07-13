@@ -41,9 +41,20 @@ export default function TariffsPublicPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8" dir="rtl">
+    <main className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8" dir="rtl">
+      {/* 
+        تزریق متادیتای پایه برای صفحات کلاینتی جهت جلوگیری از بدون تایتل ماندن صفحه 
+        و هدایت ربات‌ها به آدرس کانونیکال
+      */}
+      <title>تعرفه‌ها و ارتقای حساب کاربری | درخواست‌یاب</title>
+      <meta 
+        name="description" 
+        content="خرید بسته‌های ارتقای حساب و اعتبار در پلتفرم درخواست‌یاب جهت دسترسی به اطلاعات تماس تامین‌کنندگان و ارسال پیشنهاد قیمت." 
+      />
+      <link rel="canonical" href="https://darkhastyab.com/tariffs" />
+
       {/* هدر صفحه */}
-      <div className="relative mb-20 text-center space-y-4">
+      <header className="relative mb-20 text-center space-y-4">
         <div className="absolute inset-x-0 -top-16 -z-10 flex justify-center">
           <div className="h-40 w-[420px] rounded-full bg-cyan-200/30 blur-3xl" />
         </div>
@@ -55,7 +66,7 @@ export default function TariffsPublicPage() {
           یکی از بسته‌های زیر را برای دسترسی مستقیم به اطلاعات تماس تامین‌کنندگان
           و ثبت پیشنهادات نامحدود انتخاب کنید.
         </p>
-      </div>
+      </header>
 
       {/* گرید تعرفه‌ها */}
       <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
@@ -65,7 +76,7 @@ export default function TariffsPublicPage() {
               const hasDiscount = tariff.discountPercent > 0;
 
               return (
-                <div
+                <section
                   key={tariff.id}
                   className="group relative flex flex-col justify-between overflow-hidden rounded-[28px] border border-white/60 bg-white/85 p-8 shadow-xl shadow-slate-200/50 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-cyan-200/40"
                 >
@@ -76,7 +87,7 @@ export default function TariffsPublicPage() {
                   {/* تگ تخفیف */}
                   {hasDiscount && (
                     <span className="absolute right-6 top-6 flex items-center gap-1 rounded-full bg-gradient-to-l from-rose-500 to-rose-400 px-3 py-1.5 text-xs font-bold text-white shadow-lg shadow-rose-300/40">
-                      <Sparkles size={14} />
+                      <Sparkles size={14} aria-hidden="true" />
                       {tariff.discountPercent}% تخفیف
                     </span>
                   )}
@@ -84,15 +95,15 @@ export default function TariffsPublicPage() {
                   <div className="space-y-6">
                     {/* عنوان */}
                     <div className="text-center">
-                      <h3 className="text-xl font-extrabold text-slate-800 transition group-hover:text-cyan-600">
+                      <h2 className="text-xl font-extrabold text-slate-800 transition group-hover:text-cyan-600">
                         {tariff.title}
-                      </h3>
+                      </h2>
                     </div>
 
                     {/* باکس اعتبار */}
                     <div className="flex items-center gap-4 rounded-2xl border border-cyan-100 bg-gradient-to-br from-cyan-50 via-white to-slate-50 p-5 shadow-inner">
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-600 text-white shadow-lg shadow-cyan-200/40">
-                        <Sparkles size={20} />
+                        <Sparkles size={20} aria-hidden="true" />
                       </div>
 
                       <div className="leading-tight">
@@ -118,7 +129,7 @@ export default function TariffsPublicPage() {
                     </div>
                   </div>
 
-                  {/* قیمت و دکمه */}
+                  {/* قیمت و دکمه خرید */}
                   <div className="mt-8 space-y-5 border-t border-slate-200/50 pt-6">
                     <div className="flex flex-col items-start gap-1">
                       {hasDiscount && (
@@ -139,15 +150,16 @@ export default function TariffsPublicPage() {
 
                     <button
                       onClick={() => handleBuy(tariff.id)}
+                      aria-label={`خرید بسته ${tariff.title}`}
                       className="w-full rounded-2xl bg-gradient-to-r from-cyan-600 to-cyan-500 py-3.5 text-sm font-black text-white shadow-lg shadow-cyan-300/40 transition-all duration-300 hover:from-cyan-700 hover:to-cyan-600 active:scale-[0.97]"
                     >
                       خرید بسته
                     </button>
                   </div>
-                </div>
+                </section>
               );
             })}
       </div>
-    </div>
+    </main>
   );
 }
