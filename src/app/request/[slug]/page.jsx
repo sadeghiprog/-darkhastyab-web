@@ -28,7 +28,7 @@ export async function generateMetadata({ params }) {
 
   if (!request) {
     return {
-      title: "درخواست موردنظر پیدا نشد | Darkhastyab",
+      title: "درخواست موردنظر پیدا نشد | درخواست یاب",
       description: "درخواست موردنظر پیدا نشد.",
     };
   }
@@ -36,10 +36,10 @@ export async function generateMetadata({ params }) {
   const title = request.title || "جزئیات درخواست";
   const description =
     request.description?.slice(0, 160) ||
-    "جزئیات این درخواست را در Darkhastyab مشاهده کنید.";
+    "جزئیات این درخواست را در درخواست یاب مشاهده کنید.";
 
   return {
-    title: `${title} | Darkhastyab`,
+    title: `${title} | درخواستیاب`,
     description,
     alternates: {
       canonical: `https://darkhastyab.com/request/${slug}`, // آدرس کامل سئو بهتری دارد

@@ -48,7 +48,7 @@ export default function SuppliersPage() {
           
           <div className="relative max-w-4xl mx-auto px-6 py-6 md:py-8 flex flex-col items-center text-center">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-600 border border-blue-100">
-             درخاست‌یاب شبکه تأمین‌کنندگان بازار 
+             درخاست یاب شبکه تأمین‌کنندگان بازار 
             </span>
 
             <h1 className="mt-3 text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">

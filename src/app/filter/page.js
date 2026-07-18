@@ -39,18 +39,18 @@ function normalizeSearchParams(searchParams) {
 
 function buildPageTitle(categoryName, provinceName) {
   if (categoryName && provinceName) {
-    return `درخواست های ${categoryName} در ${provinceName} | درخواست‌یاب`;
+    return `درخواست های ${categoryName} در ${provinceName} | درخواست یاب`;
   }
 
   if (categoryName) {
-    return `درخواست های ${categoryName} | درخواست‌یاب`;
+    return `درخواست های ${categoryName} | درخواست یاب`;
   }
 
   if (provinceName) {
-    return `درخواست های خرید در ${provinceName} | درخواست‌یاب`;
+    return `درخواست های خرید در ${provinceName} | درخواست یاب`;
   }
 
-  return "درخواست های خرید | درخواست‌یاب";
+  return "درخواست های خرید | درخواست یاب";
 }
 
 function buildHeading(categoryName, provinceName) {
@@ -71,18 +71,18 @@ function buildHeading(categoryName, provinceName) {
 
 function buildDescription(categoryName, provinceName) {
   if (categoryName && provinceName) {
-    return `مشاهده درخواست های ${categoryName} در ${provinceName}، بررسی جزئیات درخواست‌ها و ارتباط با خریداران در درخواست‌یاب.`;
+    return `مشاهده درخواست های ${categoryName} در ${provinceName}، بررسی جزئیات درخواست‌ها و ارتباط با خریداران در درخواست یاب.`;
   }
 
   if (categoryName) {
-    return `مشاهده درخواست های ${categoryName}، بررسی جزئیات درخواست‌ها و ارتباط با خریداران در درخواست‌یاب.`;
+    return `مشاهده درخواست های ${categoryName}، بررسی جزئیات درخواست‌ها و ارتباط با خریداران در درخواست یاب.`;
   }
 
   if (provinceName) {
-    return `مشاهده درخواست های خرید در ${provinceName} و ارتباط با خریداران در درخواست‌یاب.`;
+    return `مشاهده درخواست های خرید در ${provinceName} و ارتباط با خریداران در درخواست یاب.`;
   }
 
-  return "مشاهده درخواست های خرید و ارتباط مستقیم با خریداران در درخواست‌یاب.";
+  return "مشاهده درخواست های خرید و ارتباط مستقیم با خریداران در درخواست یاب.";
 }
 
 function getRequests(data) {
@@ -249,7 +249,7 @@ export async function generateMetadata({ searchParams }) {
       type: "website",
       locale: "fa_IR",
       url: canonical,
-      siteName: "درخواست‌یاب",
+      siteName: "درخواست یاب",
     },
 
     twitter: {

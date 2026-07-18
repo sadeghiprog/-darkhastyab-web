@@ -43,12 +43,12 @@ export async function generateMetadata({ searchParams }) {
   const q = resolvedParams.q || "";
 
   const title = q 
-    ? `درخواست‌های خرید و تامین ${q} | درخواست‌یاب` 
-    : "جستجوی درخواست‌های خرید و استعلام قیمت | درخواست‌یاب";
+    ? `درخواست‌های خرید و تامین ${q} | درخواست یاب` 
+    : "جستجوی درخواست‌های خرید و استعلام قیمت | درخواست یاب";
 
   const description = q
     ? `جدیدترین درخواست‌های خرید، تامین و استعلام قیمت مرتبط با "${q}". برای مشاهده جزئیات، اطلاعات تماس و ثبت پیشنهاد کلیک کنید.`
-    : "جستجو و فیلتر کردن درخواست‌های خرید و استعلام قیمت کالاها در سراسر ایران در سامانه درخواست‌یاب.";
+    : "جستجو و فیلتر کردن درخواست‌های خرید و استعلام قیمت کالاها در سراسر ایران در سامانه درخواست یاب.";
 
   const canonicalUrl = `https://darkhastyab.com/search${q ? `?q=${encodeURIComponent(q)}` : ""}`;
 
@@ -62,7 +62,7 @@ export async function generateMetadata({ searchParams }) {
       title,
       description,
       url: canonicalUrl,
-      siteName: "درخواست‌یاب",
+      siteName: "درخواست یاب",
       locale: "fa_IR",
       type: "website",
     },
@@ -106,7 +106,7 @@ export default async function SearchPage({ searchParams }) {
             {results.length > 0 ? (
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3">
                 {results.map((req) => (
-                  <RequestCard key={req.id} request={req} />
+                  <RequestCard key={req.id} request={req} highlight={q}/>
                 ))}
               </div>
             ) : (

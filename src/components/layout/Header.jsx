@@ -91,7 +91,7 @@ export default function Header() {
                 >
                   <div className="w-3.5 h-3.5 border-2 border-white rounded-md rotate-45" />
                 </div>
-                <span className="text-white font-bold text-lg">درخواست یاب</span>
+                <span className="text-white font-bold text-lg">درخواست یاب 26608406</span>
               </Link>
 
               <nav className="flex items-center gap-6">
@@ -172,7 +172,7 @@ export default function Header() {
                 >
                   <div className="w-3 h-3 border-2 border-white rounded-md rotate-45"></div>
                 </div>
-                <span className="text-white font-bold text-base">درخواست‌یاب</span>
+                <span className="text-white font-bold text-base">درخواست یاب 26608406</span>
               </Link>
             </div>
 

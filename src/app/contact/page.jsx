@@ -1,9 +1,9 @@
 import { Mail, MapPin, Phone, UserRound, BadgeInfo } from "lucide-react";
 
 export const metadata = {
-  title: "تماس با ما | درخواست‌یاب",
+  title: "تماس با ما | درخواست یاب",
   description:
-    "اطلاعات تماس، نشانی دفتر مرکزی، شماره تلفن و راه‌های ارتباطی با پشتیبانی پلتفرم درخواست‌یاب جهت پیگیری درخواست‌ها و هماهنگی‌های بیشتر.",
+    "اطلاعات تماس، نشانی دفتر مرکزی، شماره تلفن و راه‌های ارتباطی با پشتیبانی پلتفرم درخواست یاب جهت پیگیری درخواست‌ها و هماهنگی‌های بیشتر.",
   keywords: [
     "تماس با درخواست یاب",
     "پشتیبانی درخواست یاب",
@@ -22,15 +22,15 @@ export const metadata = {
     type: "website",
     locale: "fa_IR",
     url: "https://darkhastyab.com/contact",
-    siteName: "درخواست‌یاب",
-    title: "تماس با ما | درخواست‌یاب",
+    siteName: "درخواست یاب",
+    title: "تماس با ما | درخوا‌ست یاب",
     description:
-      "اطلاعات تماس، شماره همراه، تلفن ثابت و نشانی پلتفرم B2B درخواست‌یاب جهت پشتیبانی و ارتباط مستقیم.",
+      "اطلاعات تماس، شماره همراه، تلفن ثابت و نشانی پلتفرم  درخواست یاب جهت پشتیبانی و ارتباط مستقیم.",
   },
   twitter: {
     card: "summary",
-    title: "تماس با ما | درخواست‌یاب",
-    description: "راه‌های ارتباطی و آدرس دفتر پشتیبانی پلتفرم درخواست‌یاب.",
+    title: "تماس با ما | درخواست یاب",
+    description: "راه‌های ارتباطی و آدرس دفتر پشتیبانی پلتفرم درخواست یاب.",
   },
   robots: {
     index: true,
@@ -42,7 +42,7 @@ export const metadata = {
 const localBusinessSchema = {
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  "name": "درخواست‌یاب",
+  "name": "درخواست یاب",
   "image": "https://darkhastyab.com/images/logo.png", // در صورت وجود، آدرس لوگو را جایگزین کنید
   "telephone": ["09190555510", "04137725075"],
   "email": "darkhastyab@gmail.com",
@@ -76,7 +76,7 @@ export default function ContactPage() {
       <section className="mx-auto max-w-5xl px-4 py-14 md:px-6 md:py-20">
         <div className="mx-auto max-w-2xl text-center">
           <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-600 shadow-sm">
-            ارتباط با درخواست‌یاب
+            ارتباط با درخواست یاب
           </span>
 
           <h1 className="mt-5 text-3xl font-extrabold leading-tight text-slate-900 md:text-5xl md:leading-[4rem]">
@@ -84,7 +84,7 @@ export default function ContactPage() {
           </h1>
 
           <p className="mt-4 text-sm leading-8 text-slate-600 md:text-base">
-            برای ارتباط با مجموعه درخواست‌یاب، دریافت پشتیبانی، پیگیری درخواست‌ها
+            برای ارتباط با مجموعه درخواست یاب، دریافت پشتیبانی، پیگیری درخواست‌ها
             یا هماهنگی‌های بیشتر، از طریق اطلاعات زیر با ما در تماس باشید.
           </p>
         </div>

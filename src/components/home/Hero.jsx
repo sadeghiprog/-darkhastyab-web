@@ -23,12 +23,12 @@ export default function HeroSection() {
       <div className="mx-auto max-w-5xl px-4 py-12 md:py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900 leading-[1.8] md:leading-[1.7]">
-            ارتباط مستقیم خریداران و فروشندگان در
+            ارتباط مستقیم خریداران و فروشندگان در 26608406
             <span className="text-cyan-600"> درخواست یاب </span>
           </h1>
 
           <p className="mt-4 text-sm md:text-base leading-7 text-slate-600">
-            در درخواست‌یاب می‌توانید درخواست خرید خود را ثبت کنید، نیازهای بازار را
+            در درخواست یاب می‌توانید درخواست خرید خود را ثبت کنید، نیازهای بازار را
             جستجو کنید و با تأمین‌کنندگان مرتبط ارتباط بگیرید.
           </p>
 
