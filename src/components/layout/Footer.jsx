@@ -9,7 +9,7 @@ const footerLinks = [
   { href: "/filter", label: "درخواست‌ها" },
   { href: "/suppliers", label: "تأمین‌کنندگان" },
   { href: "/tariffs", label: "تعرفه‌ها" },
-  { href: "/help", label: "راهنما" },
+  { href: "/help", label: "راهنما و قوانین" },
   { href: "/contact", label: "تماس با ما" },
 ];
 
@@ -58,12 +58,12 @@ export default function Footer() {
                 referrerPolicy="origin"
                 target="_blank"
                 rel="noopener noreferrer"
-                href="https://trustseal.enamad.ir/?id=6933380&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
+                href="https://trustseal.enamad.ir/?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
                 className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-2 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
               >
                 <img
                   referrerPolicy="origin"
-                  src="https://trustseal.enamad.ir/logo.aspx?id=6933380&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
+                  src="https://trustseal.enamad.ir/logo.aspx?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
                   alt="نماد اعتماد الکترونیکی"
                   style={{ cursor: "pointer", width: 80, height: "auto" }}
                 />

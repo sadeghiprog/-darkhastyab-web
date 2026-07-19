@@ -70,7 +70,7 @@ export default function Header() {
     { title: "درخواست‌ها", href: "/filter" },
     { title: "تأمین‌کنندگان", href: "/suppliers" },
     { title: "تعرفه ها", href: "/tariffs" },
-    { title: "راهنما", href: "/help" },
+    { title: "راهنما و قوانین", href: "/help" },
     { title: "تماس با ما", href: "/contact" },
   ];
 
