@@ -51,7 +51,7 @@ const localBusinessSchema = {
     "streetAddress": "عسگر آباد، بن‌بست نریمانی، پلاک 109",
     "addressLocality": "بناب",
     "addressRegion": "آذربایجان شرقی",
-    "postalCode": "5551955134",
+    "postalCode": "5551715616",
     "addressCountry": "IR"
   },
   "url": "https://darkhastyab.com",

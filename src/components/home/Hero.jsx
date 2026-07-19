@@ -23,7 +23,7 @@ export default function HeroSection() {
       <div className="mx-auto max-w-5xl px-4 py-12 md:py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-slate-900 leading-[1.8] md:leading-[1.7]">
-            ارتباط مستقیم خریداران و فروشندگان در 26608406
+            ارتباط مستقیم خریداران و فروشندگان در
             <span className="text-cyan-600"> درخواست یاب </span>
           </h1>
 

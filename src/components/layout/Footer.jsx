@@ -35,7 +35,7 @@ export default function Footer() {
 
                 <div>
                   <h3 className="text-sm font-black text-slate-900 sm:text-base">
-                    درخواست یاب 
+                    درخواست یاب
                   </h3>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
                     ارتباط سریع خریدار و تأمین‌کننده، ساده و حرفه‌ای
@@ -44,14 +44,29 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* تماس */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            {/* تماس + اینماد */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
               <a
                 href="tel:02191000000"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900"
               >
                 <Phone size={15} className="text-slate-500" />
                 <span>پشتیبانی 09190555510</span>
+              </a>
+
+              <a
+                referrerPolicy="origin"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://trustseal.enamad.ir/?id=6933380&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
+                className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-2 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
+              >
+                <img
+                  referrerPolicy="origin"
+                  src="https://trustseal.enamad.ir/logo.aspx?id=6933380&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
+                  alt="نماد اعتماد الکترونیکی"
+                  style={{ cursor: "pointer", width: 80, height: "auto" }}
+                />
               </a>
             </div>
           </div>
