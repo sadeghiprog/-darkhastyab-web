@@ -18,10 +18,7 @@ export default function Footer() {
     <footer className="mt-16 mb-8" dir="rtl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-[28px] border border-slate-200/80 bg-gradient-to-br from-white via-slate-50/80 to-cyan-50/40 shadow-[0_10px_40px_rgba(15,23,42,0.06)]">
-          
-          {/* top */}
           <div className="flex flex-col gap-6 px-5 py-6 sm:px-6 md:flex-row md:items-center md:justify-between">
-            {/* brand */}
             <div className="max-w-md">
               <div className="flex items-center gap-3">
                 <div
@@ -30,7 +27,7 @@ export default function Footer() {
                     background: `linear-gradient(135deg, ${COLORS.accent} 0%, #0ea5e9 100%)`,
                   }}
                 >
-                  <div className="h-4 w-4 rounded-md border-2 border-white rotate-45" />
+                  <div className="h-4 w-4 rotate-45 rounded-md border-2 border-white" />
                 </div>
 
                 <div>
@@ -44,10 +41,9 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* تماس + اینماد */}
             <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
               <a
-                href="tel:02191000000"
+                href="tel:09190555510"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900"
               >
                 <Phone size={15} className="text-slate-500" />
@@ -55,28 +51,26 @@ export default function Footer() {
               </a>
 
               <a
-                referrerPolicy="origin"
+                href="https://trustseal.enamad.ir/?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
                 target="_blank"
                 rel="noopener noreferrer"
-                href="https://trustseal.enamad.ir/?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
-                className="flex items-center justify-center rounded-2xl border border-slate-200 bg-white p-2 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300"
+                referrerPolicy="origin"
+                className="inline-flex items-center justify-center"
               >
                 <img
-                  referrerPolicy="origin"
                   src="https://trustseal.enamad.ir/logo.aspx?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
-                  alt="نماد اعتماد الکترونیکی"
-                  style={{ cursor: "pointer", width: 80, height: "auto" }}
+                  alt=""
+                  referrerPolicy="origin"
+                  style={{ cursor: "pointer" }}
+                  code="Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW"
                 />
               </a>
             </div>
           </div>
 
-          {/* divider */}
           <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
 
-          {/* bottom */}
           <div className="flex flex-col gap-4 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-            {/* links */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               {footerLinks.map((link) => (
                 <Link
@@ -93,7 +87,6 @@ export default function Footer() {
               ))}
             </div>
 
-            {/* copyright */}
             <div className="text-[11px] leading-5 text-slate-500">
               © {new Date().getFullYear()} درخواست یاب — تمامی حقوق محفوظ است.
             </div>
