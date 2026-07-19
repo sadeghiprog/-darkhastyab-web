@@ -39,7 +39,7 @@ export async function generateMetadata({ params }) {
     "جزئیات این درخواست را در درخواست یاب مشاهده کنید.";
 
   return {
-    title: `${title} | درخواست یاب`,
+    title,
     description,
     alternates: {
       canonical: `https://darkhastyab.com/request/${slug}`, // آدرس کامل سئو بهتری دارد
