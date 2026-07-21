@@ -1,8 +1,4 @@
-"use client";
-
 import Link from "next/link";
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -17,73 +13,61 @@ const PAYMENT_ERROR_MESSAGES = {
     description:
       "پرداخت لغو شده یا فرآیند پرداخت تا انتها انجام نشده است. در این حالت مبلغی به کیف پول اضافه نمی‌شود.",
   },
-
   GATEWAY_REJECTED: {
     title: "پرداخت توسط درگاه تایید نشد",
     description:
       "درگاه پرداخت تراکنش را ناموفق اعلام کرده است. اگر وجهی از حساب شما کسر شده باشد، معمولاً توسط بانک برگشت داده می‌شود.",
   },
-
   AMOUNT_NOT_MATCH: {
     title: "مبلغ پرداخت صحیح نیست",
     description:
       "مبلغ پرداخت‌شده با مبلغ سفارش مطابقت ندارد. کیف پول شارژ نشده است. در صورت کسر وجه، لطفاً با پشتیبانی تماس بگیرید.",
   },
-
   INVALID_RECEIPT: {
     title: "رسید پرداخت معتبر نیست",
     description:
       "شماره رسید برگشتی از درگاه معتبر نیست و پرداخت توسط سیستم تایید نشد.",
   },
-
   RECEIPT_NOT_FOUND: {
     title: "رسید پرداخت پیدا نشد",
     description:
       "رسید پرداخت در سامانه درگاه پیدا نشد. در صورت کسر وجه، لطفاً با پشتیبانی تماس بگیرید.",
   },
-
   PAYMENT_NOT_FOUND: {
     title: "اطلاعات پرداخت پیدا نشد",
     description:
       "اطلاعات پرداخت در درگاه پیدا نشد و امکان تایید تراکنش وجود ندارد.",
   },
-
   ALREADY_VERIFIED: {
     title: "پرداخت قبلاً بررسی شده است",
     description:
       "این تراکنش قبلاً بررسی شده است. لطفاً وضعیت کیف پول خود را بررسی کنید.",
   },
-
   RECEIPT_NUMBER_MISSING: {
     title: "شماره رسید دریافت نشد",
     description:
       "اطلاعات بازگشتی از درگاه کامل نیست و شماره رسید پرداخت دریافت نشده است.",
   },
-
   CALLBACK_IDENTIFIERS_MISSING: {
     title: "اطلاعات بازگشتی ناقص است",
     description:
       "شناسه‌های لازم برای پیدا کردن تراکنش از سمت درگاه دریافت نشد.",
   },
-
   TRANSACTION_NOT_FOUND: {
     title: "تراکنش پیدا نشد",
     description:
       "تراکنش مربوط به این پرداخت در سیستم پیدا نشد. در صورت کسر وجه، لطفاً با پشتیبانی تماس بگیرید.",
   },
-
   VERIFY_REQUEST_FAILED: {
     title: "ارتباط با درگاه ناموفق بود",
     description:
       "در زمان تایید نهایی پرداخت، ارتباط با درگاه برقرار نشد. لطفاً کمی بعد وضعیت کیف پول خود را بررسی کنید.",
   },
-
   VERIFY_FAILED: {
     title: "تایید پرداخت ناموفق بود",
     description:
       "پرداخت توسط درگاه تایید نهایی نشد. در صورت کسر وجه، لطفاً با پشتیبانی تماس بگیرید.",
   },
-
   INTERNAL_ERROR: {
     title: "خطا در بررسی پرداخت",
     description:
@@ -124,17 +108,14 @@ function getPaymentResult(status, errorCode) {
   };
 }
 
-export default function PaymentResultPage() {
-  const searchParams = useSearchParams();
+export default async function PaymentResultPage({ searchParams }) {
+  const params = await searchParams;
 
-  const status = searchParams.get("status");
-  const transactionId = searchParams.get("transactionId");
-  const errorCode = searchParams.get("errorCode");
+  const status = params?.status || "";
+  const transactionId = params?.transactionId || "";
+  const errorCode = params?.errorCode || "";
 
-  const result = useMemo(() => {
-    return getPaymentResult(status, errorCode);
-  }, [status, errorCode]);
-
+  const result = getPaymentResult(status, errorCode);
   const Icon = result.icon;
 
   return (
