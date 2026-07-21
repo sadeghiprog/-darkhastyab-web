@@ -32,7 +32,7 @@ export default function CreatePurchaseRequestPage() {
     unitId: "",
     quantity: "",
     budgetAmount: "",
-    expiresInDays: "3", // پیش‌فرض ۳ روز
+    expiresInDays: "100000", // پیش‌فرض ۳ روز
     provinceId: "",
     cityId: "",
     description: "",

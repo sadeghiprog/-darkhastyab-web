@@ -15,7 +15,6 @@ function normalizeParam(value) {
   if (Array.isArray(value)) {
     return value[0] || "";
   }
-
   return value || "";
 }
 
@@ -28,7 +27,6 @@ function normalizeSearchParams(searchParams) {
 
   Object.entries(searchParams).forEach(([key, value]) => {
     const normalizedValue = normalizeParam(value);
-
     if (normalizedValue && normalizedValue.trim() !== "") {
       params.set(key, normalizedValue);
     }
@@ -41,15 +39,12 @@ function buildPageTitle(categoryName, provinceName) {
   if (categoryName && provinceName) {
     return `درخواست های ${categoryName} در ${provinceName} | درخواست یاب`;
   }
-
   if (categoryName) {
     return `درخواست های ${categoryName} | درخواست یاب`;
   }
-
   if (provinceName) {
     return `درخواست های خرید در ${provinceName} | درخواست یاب`;
   }
-
   return "درخواست های خرید | درخواست یاب";
 }
 
@@ -57,15 +52,12 @@ function buildHeading(categoryName, provinceName) {
   if (categoryName && provinceName) {
     return `درخواست های ${categoryName} در ${provinceName}`;
   }
-
   if (categoryName) {
     return `درخواست های ${categoryName}`;
   }
-
   if (provinceName) {
     return `درخواست های خرید در ${provinceName}`;
   }
-
   return "درخواست های خرید";
 }
 
@@ -73,15 +65,12 @@ function buildDescription(categoryName, provinceName) {
   if (categoryName && provinceName) {
     return `مشاهده درخواست های ${categoryName} در ${provinceName}، بررسی جزئیات درخواست‌ها و ارتباط با خریداران در درخواست یاب.`;
   }
-
   if (categoryName) {
     return `مشاهده درخواست های ${categoryName}، بررسی جزئیات درخواست‌ها و ارتباط با خریداران در درخواست یاب.`;
   }
-
   if (provinceName) {
     return `مشاهده درخواست های خرید در ${provinceName} و ارتباط با خریداران در درخواست یاب.`;
   }
-
   return "مشاهده درخواست های خرید و ارتباط مستقیم با خریداران در درخواست یاب.";
 }
 
@@ -89,11 +78,9 @@ function getRequests(data) {
   if (Array.isArray(data?.requests)) {
     return data.requests;
   }
-
   if (Array.isArray(data?.data)) {
     return data.data;
   }
-
   return [];
 }
 
@@ -119,11 +106,17 @@ function getTotal(data, requests) {
   return total !== undefined ? Number(total) : requests.length;
 }
 
+// تغییر کلیدی: استخراج داده‌ها بر اساس پارامترهای داینامیک ارسالی
 async function fetchFilteredRequests(searchParams) {
   const params = normalizeSearchParams(searchParams);
 
-  params.set("page", "1");
-  params.set("limit", "20");
+  // اگر صفحه مشخصی ارسال نشده بود، پیش‌فرض صفحه ۱ با لیمیت ۲۰ است
+  if (!params.has("page")) {
+    params.set("page", "1");
+  }
+  if (!params.has("limit")) {
+    params.set("limit", "20");
+  }
 
   try {
     const response = await fetch(
@@ -181,7 +174,6 @@ async function fetchLatestRequests() {
     }
 
     const data = await response.json();
-
     return getRequests(data);
   } catch (error) {
     console.error("Server latest requests error:", error);
@@ -194,23 +186,25 @@ function buildCanonical(searchParams) {
 
   const categoryId = normalizeParam(searchParams?.category);
   const provinceId = normalizeParam(searchParams?.province);
+  const page = normalizeParam(searchParams?.page);
 
   if (categoryId) {
     params.set("category", categoryId);
   }
-
   if (provinceId) {
     params.set("province", provinceId);
   }
+  // برای حفظ ساختار سئوی صفحات صفحه‌بندی شده، مقدار صفحه را نیز به آدرس کانونی اضافه می‌کنیم
+  if (page && page !== "1") {
+    params.set("page", page);
+  }
 
   const queryString = params.toString();
-
   return `${SITE_URL}/filter${queryString ? `?${queryString}` : ""}`;
 }
 
 export async function generateMetadata({ searchParams }) {
   const resolvedSearchParams = await searchParams;
-
   const filterData = await fetchFilteredRequests(resolvedSearchParams);
 
   const title = buildPageTitle(
@@ -229,11 +223,9 @@ export async function generateMetadata({ searchParams }) {
   return {
     title,
     description,
-
     alternates: {
       canonical,
     },
-
     robots: {
       index: hasResults,
       follow: true,
@@ -242,7 +234,6 @@ export async function generateMetadata({ searchParams }) {
         follow: true,
       },
     },
-
     openGraph: {
       title,
       description,
@@ -251,7 +242,6 @@ export async function generateMetadata({ searchParams }) {
       url: canonical,
       siteName: "درخواست یاب",
     },
-
     twitter: {
       card: "summary",
       title,

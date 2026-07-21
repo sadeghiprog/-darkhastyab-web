@@ -71,6 +71,7 @@ function SearchResults({
   const [filteredRequests, setFilteredRequests] = useState(initialRequests);
   const [total, setTotal] = useState(initialTotal);
   const [latestRequests, setLatestRequests] = useState(initialLatestRequests);
+  const [page, setPage] = useState(1);
 
   const [activeCategoryName, setActiveCategoryName] = useState(
     initialCategoryName
@@ -81,29 +82,18 @@ function SearchResults({
   );
 
   const [loadingFiltered, setLoadingFiltered] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loadingLatest, setLoadingLatest] = useState(false);
 
-  const apiQueryString = useMemo(() => {
-    const params = new URLSearchParams(queryString);
-
-    for (const [key, value] of [...params.entries()]) {
-      if (!value || value.trim() === "") {
-        params.delete(key);
-      }
-    }
-
-    params.set("page", "1");
-    params.set("limit", "20");
-
-    return params.toString();
-  }, [queryString]);
-
+  // ۱. وقتی فیلترها از آدرس تغییر می‌کنند، همه‌چیز را برای نتایج جدید ریست می‌کنیم.
   useEffect(() => {
     setFilteredRequests(initialRequests);
     setTotal(initialTotal);
     setActiveCategoryName(initialCategoryName);
     setActiveProvinceName(initialProvinceName);
+    setPage(1); // برگشت به صفحه اول
   }, [
+    queryString, // هر زمان پارامترهای جستجو عوض شد
     initialRequests,
     initialTotal,
     initialCategoryName,
@@ -114,24 +104,61 @@ function SearchResults({
     setLatestRequests(initialLatestRequests);
   }, [initialLatestRequests]);
 
+  // ۲. این متد برای دکمه «مشاهده بیشتر» درخواست صفحه بعدی را می‌فرستد.
+  const handleLoadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+
+    try {
+      const params = new URLSearchParams(queryString);
+      params.set("page", nextPage.toString());
+      params.set("limit", "20");
+
+      const response = await fetch(`${API_BASE}/purchase-requests?${params.toString()}`, {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        throw new Error(`Load more failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      const newRequests = getRequests(data);
+
+      // اضافه کردن درخواست‌های جدید به انتهای لیست قبلی
+      setFilteredRequests((prev) => [...prev, ...newRequests]);
+      setTotal(getTotal(data, newRequests));
+      setPage(nextPage);
+    } catch (error) {
+      console.error("Load more requests error:", error);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // ۳. این افکت برای زمانی است که کلاینت مستقیماً فیلترها را از طریق سایدبار تغییر می‌دهد
+  // و می‌خواهیم اولین صفحه از نتایج فیلتر جدید را دریافت کنیم.
   useEffect(() => {
+    // برای تغییرات صفحه اول، از رفتار پیش‌فرضِ سِت شده در افکت اول استفاده می‌کنیم.
+    if (page !== 1) return; 
+
     const controller = new AbortController();
 
-    const fetchFilteredRequests = async () => {
+    const fetchFirstPage = async () => {
       setLoadingFiltered(true);
-
       try {
-        const url = `${API_BASE}/purchase-requests?${apiQueryString}`;
+        const params = new URLSearchParams(queryString);
+        params.set("page", "1");
+        params.set("limit", "20");
 
-        const response = await fetch(url, {
+        const response = await fetch(`${API_BASE}/purchase-requests?${params.toString()}`, {
           cache: "no-store",
           signal: controller.signal,
         });
 
         if (!response.ok) {
-          throw new Error(
-            `Filtered requests fetch failed with status ${response.status}`
-          );
+          throw new Error(`Fetch failed with status ${response.status}`);
         }
 
         const data = await response.json();
@@ -142,13 +169,8 @@ function SearchResults({
         setActiveCategoryName(data?.activeCategoryName || "");
         setActiveProvinceName(data?.activeProvinceName || "");
       } catch (error) {
-        if (error.name === "AbortError") {
-          return;
-        }
-
+        if (error.name === "AbortError") return;
         console.error("Filtered requests error:", error);
-
-        // اطلاعات رندرشده سمت سرور را در صورت خطای موقت حذف نمی‌کنیم.
       } finally {
         if (!controller.signal.aborted) {
           setLoadingFiltered(false);
@@ -156,16 +178,19 @@ function SearchResults({
       }
     };
 
-    fetchFilteredRequests();
+    fetchFirstPage();
 
     return () => {
       controller.abort();
     };
-  }, [apiQueryString]);
+  }, [queryString]);
 
   const pageTitle = useMemo(() => {
     return buildPageTitle(activeCategoryName, activeProvinceName);
   }, [activeCategoryName, activeProvinceName]);
+
+  // چک کردن اینکه آیا آیتم بیشتری برای لود کردن وجود دارد یا خیر
+  const hasMore = filteredRequests.length < total;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
@@ -204,21 +229,61 @@ function SearchResults({
               ) : filteredRequests.length > 0 ? (
                 <>
                   <div
-                    className={`grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3 ${
+                    className={`grid grid-cols-1 gap-6 md:grid-cols-2 2xl:grid-cols-3 transition-opacity ${
                       loadingFiltered ? "opacity-60" : ""
                     }`}
                   >
-                    {filteredRequests.map((request) => (
+                    {filteredRequests.map((request, idx) => (
+                      // ترکیب ID و Index برای کلید یکتا در هنگام اضافه شدن صفحات
                       <RequestCard
-                        key={request.id}
+                        key={`${request.id}-${idx}`}
                         request={request}
                       />
                     ))}
                   </div>
 
-                  {loadingFiltered && (
-                    <p className="text-center text-sm text-slate-400">
-                      در حال به‌روزرسانی نتایج...
+                  {/* دکمه مشاهده بیشتر */}
+                  {hasMore && (
+                    <div className="mt-6 flex justify-center">
+                      <button
+                        onClick={handleLoadMore}
+                        disabled={loadingMore}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white px-8 py-3.5 text-sm font-bold shadow-md transition-all hover:shadow-lg active:scale-95 duration-200"
+                      >
+                        {loadingMore ? (
+                          <>
+                            <svg
+                              className="h-5 w-5 animate-spin text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                            در حال بارگذاری...
+                          </>
+                        ) : (
+                          "مشاهده درخواست‌های بیشتر"
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {!hasMore && filteredRequests.length > 20 && (
+                    <p className="mt-8 text-center text-xs text-slate-400">
+                      همهٔ درخواست‌ها نمایش داده شدند.
                     </p>
                   )}
                 </>
