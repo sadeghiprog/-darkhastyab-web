@@ -8,13 +8,15 @@ import Link from "next/link";
 
 export default function TopSuppliersSection() {
   const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [emblaRef] = useEmblaCarousel(
     {
       loop: true,
       align: "start",
-      dragFree: true,
+      dragplus: false,
       skipSnaps: false,
+      containScroll: "trimSnaps",
     },
     [
       Autoplay({
@@ -31,6 +33,8 @@ export default function TopSuppliersSection() {
 
   async function fetchTopSuppliers() {
     try {
+      setLoading(true);
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/admin/suppliers?page=1&limit=10`
       );
@@ -39,14 +43,17 @@ export default function TopSuppliersSection() {
       setSuppliers(data.suppliers || []);
     } catch (err) {
       console.error("Error fetching suppliers:", err);
+    } finally {
+      setLoading(false);
     }
   }
 
+  if (loading) return null;
   if (!suppliers.length) return null;
 
   return (
     <section className="mt-10 w-full px-4 sm:px-6 lg:px-8 mb-10" dir="rtl">
-      <div className="mx-auto max-w-7xl mb-5 flex items-center justify-between ">
+      <div className="mx-auto max-w-7xl mb-5 flex items-center justify-between">
         <div>
           <h2 className="text-lg md:text-xl font-bold text-slate-900">
             تأمین‌کنندگان برتر
@@ -64,15 +71,20 @@ export default function TopSuppliersSection() {
         </Link>
       </div>
 
-      {/* Embla Carousel */}
-      <div className="embla overflow-hidden " ref={emblaRef}>
-        <div className="embla__container flex">
-          {suppliers.map((s) => (
+      <div className="overflow-hidden" ref={emblaRef}>
+        <div className="flex gap-3 sm:gap-4 touch-pan-y">
+          {suppliers.map((supplier) => (
             <div
-              key={s.id}
-              className="embla__slide min-w-[250px] mb-10 sm:min-w-[280px] mx-2 flex-shrink-0"
+              key={supplier.id}
+              className="
+                flex-shrink-0
+                basis-[82%]
+                sm:basis-[48%]
+                lg:basis-[31%]
+                xl:basis-[24%]
+              "
             >
-              <SupplierCard supplier={s} />
+              <SupplierCard supplier={supplier} />
             </div>
           ))}
         </div>
