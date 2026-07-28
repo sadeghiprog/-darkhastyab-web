@@ -14,13 +14,13 @@ export default function TopSuppliersSection() {
     {
       loop: true,
       align: "start",
-      dragplus: false,
+      direction: "rtl", // برای سازگاری کامل با جهت صفحه
       skipSnaps: false,
       containScroll: "trimSnaps",
     },
     [
       Autoplay({
-        delay: 3000,
+        delay: 3500,
         stopOnMouseEnter: true,
         stopOnInteraction: false,
       }),
@@ -34,11 +34,9 @@ export default function TopSuppliersSection() {
   async function fetchTopSuppliers() {
     try {
       setLoading(true);
-
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/admin/suppliers?page=1&limit=10`
       );
-
       const data = await res.json();
       setSuppliers(data.suppliers || []);
     } catch (err) {
@@ -48,43 +46,46 @@ export default function TopSuppliersSection() {
     }
   }
 
-  if (loading) return null;
-  if (!suppliers.length) return null;
+  if (loading || !suppliers.length) return null;
 
   return (
-    <section className="mt-10 w-full px-4 sm:px-6 lg:px-8 mb-10" dir="rtl">
-      <div className="mx-auto max-w-7xl mb-5 flex items-center justify-between">
+    <section className="mt-10 w-full px-4 sm:px-6 lg:px-8 mb-16" dir="rtl">
+      <div className="mx-auto max-w-7xl mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-lg md:text-xl font-bold text-slate-900">
             تأمین‌کنندگان برتر
           </h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-[11px] sm:text-xs text-slate-500">
             برترین تأمین‌کنندگان بر اساس امتیاز و تعامل واقعی
           </p>
         </div>
 
         <Link
           href="/suppliers"
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+          className="text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-full transition-colors"
         >
           مشاهده همه
         </Link>
       </div>
 
-      <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex gap-3 sm:gap-4 touch-pan-y">
+      {/* کانتینر اصلی Embla */}
+      <div className="overflow-hidden cursor-grab active:cursor-grabbing" ref={emblaRef}>
+        <div className="flex -ml-4"> {/* استفاده از منفی برای جبران فاصله بین اسلایدها */}
           {suppliers.map((supplier) => (
             <div
               key={supplier.id}
               className="
-                flex-shrink-0
-                basis-[82%]
-                sm:basis-[48%]
-                lg:basis-[31%]
-                xl:basis-[24%]
+                flex-[0_0_85%] 
+                min-w-0 
+                pl-4 
+                sm:flex-[0_0_50%] 
+                lg:flex-[0_0_33.33%] 
+                xl:flex-[0_0_25%]
               "
             >
-              <SupplierCard supplier={supplier} />
+              <div className="h-full py-2"> {/* فضای اضافه برای سایه کارت‌ها */}
+                <SupplierCard supplier={supplier} />
+              </div>
             </div>
           ))}
         </div>
