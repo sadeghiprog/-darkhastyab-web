@@ -1,7 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import Script from "next/script";
 import { Phone, ChevronLeft } from "lucide-react";
 import { COLORS } from "../../constants/colors";
 
@@ -14,7 +14,32 @@ const footerLinks = [
   { href: "/contact", label: "تماس با ما" },
 ];
 
+const PARSPAL_SCRIPT_ID = "parspal-trustseal-script";
+const PARSPAL_CONTAINER_ID = "parspal-trustseal-container";
+
 export default function Footer() {
+  useEffect(() => {
+    const container = document.getElementById(PARSPAL_CONTAINER_ID);
+    if (!container) return;
+
+    // جلوگیری از تزریق تکراری در رندرهای مجدد
+    if (document.getElementById(PARSPAL_SCRIPT_ID)) return;
+
+    const script = document.createElement("script");
+    script.id = PARSPAL_SCRIPT_ID;
+    script.type = "text/javascript";
+    script.async = true;
+    script.src =
+      "https://verify.parspal.com/logo/js?gw=204734&cache=639200941708400000&width=standard&theme=default";
+
+    container.appendChild(script);
+
+    return () => {
+      const existing = document.getElementById(PARSPAL_SCRIPT_ID);
+      if (existing) existing.remove();
+    };
+  }, []);
+
   return (
     <footer className="mt-16 mb-8" dir="rtl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -56,19 +81,17 @@ export default function Footer() {
                   className="inline-flex min-h-[60px] items-center justify-center rounded-2xl border border-slate-200 bg-white p-2 shadow-sm"
                   dangerouslySetInnerHTML={{
                     __html: `
-                      <a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW'>
-                        <img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW' alt='' style='cursor:pointer' code='Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW'>
+                      <a referrerpolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW">
+                        <img referrerpolicy="origin" src="https://trustseal.enamad.ir/logo.aspx?id=760188&Code=Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW" alt="اینماد" style="cursor:pointer" code="Mlh6dv46rTdSNwFoG4uIpPrH4EX6t9NW" />
                       </a>
                     `,
                   }}
                 />
 
-                <div className="inline-flex min-h-[60px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                  <Script
-                    src="https://verify.parspal.com/logo/js?gw=204734&cache=639200941708400000&width=standard&theme=default"
-                    strategy="afterInteractive"
-                  />
-                </div>
+                <div
+                  id={PARSPAL_CONTAINER_ID}
+                  className="inline-flex min-h-[60px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
+                />
               </div>
             </div>
           </div>
