@@ -16,7 +16,7 @@ function getAvatarUrl(url) {
   const baseAvatar = process.env.NEXT_PUBLIC_AVATAR_URL;
   const avatarSrc = url
   ? `${baseAvatar}${url}`
-  :`${baseAvatar}/uploads/avatars/avatar.png`;
+  :`${baseAvatar}/uploads/avatars/avatar.webp`;
   return avatarSrc;
 }
 

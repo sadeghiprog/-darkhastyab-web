@@ -8,11 +8,16 @@ import Alert from "../../../../components/ui/Alert";
 import Card from "../../../../components/ui/Card";
 import { lookupService } from "../../../../services/lookup.service";
 import { ROUTES } from "../../../../constants/routes";
+import { useAuth } from "../../../../context/AuthContext";
+
 
 export default function EditPurchaseRequestPage() {
   const router = useRouter();
   const params = useParams();
   const slug = params.slug;
+
+  const { user } = useAuth();  
+  const isAdmin = user?.status === "ADMIN";
 
   // --- مدیریت مراحل فرم ---
   const [step, setStep] = useState(1);
@@ -293,7 +298,12 @@ export default function EditPurchaseRequestPage() {
       );
 
       setTimeout(() => {
-        router.push(ROUTES.DASHBOARD);
+        if (isAdmin) {
+          router.push("/profile/admin/requests");
+        } else {
+          router.push("/profile/my-requests");
+        }
+        
       }, 2000);
 
     } catch (err) {

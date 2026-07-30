@@ -23,7 +23,7 @@ export default function UserCard({ user, onRoleChange }) {
   const baseAvatar = process.env.NEXT_PUBLIC_AVATAR_URL;
   const avatarSrc = user.profile?.avatarUrl
   ? `${baseAvatar}${user.profile?.avatarUrl}`
-  :`${baseAvatar}/uploads/avatars/avatar.png`;
+  :`${baseAvatar}/uploads/avatars/avatar.webp`;
 
   async function handleChange(role) {
     if (role === user.status) return;

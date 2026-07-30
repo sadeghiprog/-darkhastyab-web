@@ -34,7 +34,7 @@ export default function SupplierOfferCard({ offer, supplier: supplierProp }) {
 
   const supplierAvatar = supplier?.profile?.avatarUrl
     ? `${baseAvatar}${supplier.profile.avatarUrl}`
-    : `${baseAvatar}/uploads/avatars/avatar.png`;
+    : `${baseAvatar}/uploads/avatars/avatar.webp`;
 
   const supplierRating = Number(supplier?.rating?.avg ?? supplier?.avgRating ?? 0);
 

@@ -13,7 +13,7 @@ export default function OfferCard({
 }) {
   const avatarSrc = offer.supplier?.profile?.avatarUrl
     ? `${baseAvatar}${offer.supplier.profile.avatarUrl}`
-    : `${baseAvatar}/uploads/avatars/avatar.png`;
+    : `${baseAvatar}/uploads/avatars/avatar.webp`;
 
   return (
     <div className="flex flex-col gap-4 rounded-3xl border border-slate-100 bg-white p-5 shadow-sm md:flex-row md:items-center md:justify-between">

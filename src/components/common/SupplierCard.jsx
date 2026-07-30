@@ -11,7 +11,7 @@ export default function SupplierCard({ supplier }) {
   const baseAvatar = process.env.NEXT_PUBLIC_AVATAR_URL;
   const avatarSrc = supplier.profile?.avatarUrl
     ? `${baseAvatar}${supplier.profile?.avatarUrl}`
-    : `${baseAvatar}/uploads/avatars/avatar.png`;
+    : `${baseAvatar}/uploads/avatars/avatar.webp`;
 
   const contactCount = supplier.contactCount || 0;
   const supplyOfferCount = supplier._count?.supplyOffers || 0;

@@ -36,7 +36,7 @@ export default function DashboardPage() {
   const baseAvatar = process.env.NEXT_PUBLIC_AVATAR_URL;
   const avatarSrc = data.baseInfo.avatar
     ? `${baseAvatar}${data.baseInfo.avatar}`
-    : `${baseAvatar}/uploads/avatars/avatar.png`;
+    : `${baseAvatar}/uploads/avatars/avatar.webp`;
 
   return (
     <div className="mx-auto max-w-6xl p-6 space-y-8" dir="rtl">
@@ -68,7 +68,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2 font-bold text-cyan-700">
             <Wallet size={16} />
-            موجودی: {baseInfo.balance.toLocaleString()} تومان
+            موجودی: {baseInfo.balance.toLocaleString()} تک
           </div>
         </div>
       </div>
