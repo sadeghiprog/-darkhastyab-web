@@ -130,11 +130,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       return;
     }
 
-    if (!actionModal.hasAccess && !actionModal.hasCredit) {
-      showToast(supplyMessages.noCreditForCall || supplyMessages.noCredit);
-      return;
-    }
-
+    
     try {
       setRequestContactLoading(true);
 
@@ -413,7 +409,11 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       }
 
       setRequest(data.request);
-      alert("وضعیت با موفقیت تغییر کرد.");
+        const go = window.confirm("وضعیت با موفقیت تغییر کرد.\n\nمی‌خواهید به لیست درخواست‌ها برگردید؟");
+
+        if (go) {
+          window.location.href = "/profile/admin/requests?status=UNDER_REVIEW&page=1";
+        }
     } catch {
       alert("خطا در ارتباط با سرور");
     } finally {

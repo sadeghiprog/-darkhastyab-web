@@ -96,7 +96,7 @@ export default function AdminTariffsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 mb-1">تعداد تک (ولت)</label>
+              <label className="block text-xs font-semibold text-slate-500 mb-1">تعداد اعتبار (ولت)</label>
               <input
                 type="number"
                 required
@@ -185,7 +185,7 @@ export default function AdminTariffsPage() {
                   </div>
                   <p className="text-xs text-slate-400 mt-1">{tariff.description || "بدون توضیح"}</p>
                   <div className="mt-4 flex gap-4 text-xs font-semibold text-slate-600">
-                    <span>تک: {tariff.creditCount} عدد</span>
+                    <span>اعتبار: {tariff.creditCount} عدد</span>
                     {tariff.discountPercent > 0 && (
                       <span className="text-rose-500">تخفیف: {tariff.discountPercent}%</span>
                     )}

@@ -68,7 +68,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex items-center gap-2 font-bold text-cyan-700">
             <Wallet size={16} />
-            موجودی: {baseInfo.balance.toLocaleString()} تک
+            موجودی: {baseInfo.balance.toLocaleString()} اعتبار
           </div>
         </div>
       </div>
