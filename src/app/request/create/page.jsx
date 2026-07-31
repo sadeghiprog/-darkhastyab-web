@@ -13,14 +13,7 @@ import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../../context/AuthContext";
 import { apiFetch } from "../../../lib/api";
 
-export const metadata = {
-  title: 'ثبت درخواست جدید | درخواستیاب',
-  robots: {
-    index: false,
-    follow: false, // چون در این صفحه لینک مفیدی برای کراولر وجود ندارد
-    nocache: true,
-  },
-}
+
 
 export default function CreatePurchaseRequestPage() {
   const router = useRouter();
