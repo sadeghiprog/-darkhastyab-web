@@ -94,6 +94,7 @@ export default function DashboardPage() {
             <StatCard icon={<FileText />} title="کل درخواست‌ها" value={stats.totalRequests} />
             <StatCard icon={<FileText />} title="درخواست‌های تایید نشده" value={stats.unapprovedRequestsCount} />
             <StatCard icon={<Send />} title="کل پیشنهادها" value={stats.totalOffers} />
+            <StatCard icon={<Send />} title="کل اعتبار مصرف شده" value={stats.totalConsumedCreditsAmount} />
           </>
         )}
 

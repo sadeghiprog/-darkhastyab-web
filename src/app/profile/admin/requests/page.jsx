@@ -12,6 +12,16 @@ const STATUS_OPTIONS = [
   { label: "منتشر شده", value: "PUBLISHED" },
   { label: "در حال بررسی", value: "UNDER_REVIEW" },
   { label: "نیاز به ویرایش", value: "NEEDS_EDIT" },
+  { label: "منقضی شده", value: "EXPIRED" },
+];
+
+const EXTEND_OPTIONS = [
+  { label: "۱ روز", value: "1" },
+  { label: "۳ روز", value: "3" },
+  { label: "۷ روز", value: "7" },
+  { label: "۱۴ روز", value: "14" },
+  { label: "۳۰ روز", value: "30" },
+  { label: "بدون انقضا", value: "100000" },
 ];
 
 export default function AdminRequestsPage() {
@@ -26,6 +36,8 @@ export default function AdminRequestsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [extendDays, setExtendDays] = useState("30");
+  const [extendLoading, setExtendLoading] = useState(false);
 
   const currentListUrl = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
@@ -96,6 +108,63 @@ export default function AdminRequestsPage() {
     [status, page]
   );
 
+  const handleExtendExpired = useCallback(async () => {
+    const days = Number(extendDays);
+
+    if (!days || days < 1) {
+      alert("تعداد روز نامعتبر است.");
+      return;
+    }
+
+    const selectedOption =
+      EXTEND_OPTIONS.find((option) => option.value === extendDays)?.label ||
+      `${days} روز`;
+
+    const confirmed = window.confirm(
+      `آیا مطمئن هستید که می‌خواهید همه درخواست‌های منقضی‌شده ${selectedOption} تمدید شوند؟`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setExtendLoading(true);
+
+    try {
+      const res = await fetch(`${API}/purchase-requests2/admin/extend-expired`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+        body: JSON.stringify({
+          days,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(data?.message || "خطا در تمدید درخواست‌های منقضی‌شده");
+      }
+
+      alert(data?.message || "درخواست‌های منقضی‌شده با موفقیت تمدید شدند.");
+      setRefreshKey((prev) => prev + 1);
+
+      if (status !== "EXPIRED") {
+        updateQuery("EXPIRED", 1);
+      }
+    } catch (error) {
+      console.error("extendExpiredRequests error:", error);
+      alert(error.message || "عملیات تمدید انجام نشد.");
+    } finally {
+      setExtendLoading(false);
+    }
+  }, [extendDays, status, updateQuery]);
+
   useEffect(() => {
     const controller = new AbortController();
     fetchRequests(controller.signal);
@@ -142,12 +211,36 @@ export default function AdminRequestsPage() {
 
   return (
     <div className="max-w-6xl mx-auto p-8 space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold">مدیریت درخواست‌ها</h1>
           <p className="text-sm text-gray-500 mt-1">
             مشاهده و مدیریت درخواست‌های ثبت‌شده
           </p>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <select
+            value={extendDays}
+            onChange={(e) => setExtendDays(e.target.value)}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+            disabled={extendLoading}
+          >
+            {EXTEND_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+
+          <button
+            type="button"
+            onClick={handleExtendExpired}
+            disabled={extendLoading}
+            className="px-4 py-2 rounded-lg bg-black text-white text-sm disabled:opacity-50"
+          >
+            {extendLoading ? "در حال تمدید..." : "تمدید درخواست‌های منقضی‌شده"}
+          </button>
         </div>
       </div>
 

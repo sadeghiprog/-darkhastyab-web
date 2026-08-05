@@ -4,7 +4,7 @@ import Script from "next/script";
 import SupplierHeader from "../../../components/common/SupplierHeader";
 import SupplierOfferCard from "../../../components/common/SupplierOfferCard";
 
-// تنظیم زمان کش کردن صفحه به مدت ۵ دقیقه (اختیاری - ۳۰۰ ثانیه)
+// تنظیم زمان کش کردن صفحه به مدت ۵ دقیقه
 export const revalidate = 300;
 
 // تابع دریافت اطلاعات تامین‌کننده در سرور
@@ -20,7 +20,7 @@ async function fetchSupplierData(id) {
         headers: {
           Cookie: cookieHeader,
         },
-        cache: "no-store", // جهت اطمینان از به‌روز بودن وضعیت دسترسی تماس کاربر (credentials: "include" معادل سروری)
+        cache: "no-store",
       }
     );
 
@@ -34,32 +34,37 @@ async function fetchSupplierData(id) {
   }
 }
 
-// تولید خودکار متادیتا داینامیک برای موتورهای جستجو (SEO Title, Description, Canonical)
+// تولید خودکار متادیتا داینامیک برای موتورهای جستجو
 export async function generateMetadata({ params }) {
   const { id } = await params;
   const supplier = await fetchSupplierData(id);
 
   if (!supplier) {
     return {
-      title: "تامین‌کننده یافت نشد | درخواستیاب",
+      title: "تامین‌کننده یافت نشد | درخواست یاب",
       robots: { index: false, follow: false },
     };
   }
 
-  const companyName = supplier.profile?.companyName || supplier.name;
+  const companyName =  supplier.name || "صنعتی";
+  const activity = supplier.profile?.activityField || "صنعتی";
   const resumeText = supplier.profile?.resume || supplier.resume || "";
+  
+  // ساخت عنوان سئو مطابق خواسته شما: تامین‌کننده [حوزه فعالیت] [نام] | درخواستیاب
+  const seoTitle = `تامین‌کننده ${activity} ${companyName} | درخواست یاب`;
+
   const cleanDescription = resumeText
     ? resumeText.slice(0, 155).replace(/\r?\n|\r/g, " ") + "..."
-    : `مشخصات، اطلاعات تماس مستقیم، رزومه کاری و لیست پیشنهادهای فعال تامین‌کننده صنعتی ${companyName} در سامانه درخواستیاب.`;
+    : `مشخصات، اطلاعات تماس مستقیم، حوزه فعالیت ${activity}، رزومه کاری و لیست پیشنهادهای فعال تامین‌کننده ${companyName} در سامانه درخواست یاب.`;
 
   return {
-    title: `پروفایل تامین‌کننده ${companyName} | درخواستیاب`,
+    title: seoTitle,
     description: cleanDescription,
     alternates: {
-      canonical: `https://darkhastyab.com/supplier/${id}`, // آدرس دامنه اصلی خود را جایگزین کنید
+      canonical: `https://darkhastyab.com/supplier/${id}`,
     },
     openGraph: {
-      title: `پروفایل تامین‌کننده ${companyName} | درخواستیاب`,
+      title: seoTitle,
       description: cleanDescription,
       type: "profile",
       locale: "fa_IR",
@@ -76,31 +81,34 @@ export default async function SupplierPage({ params }) {
     notFound();
   }
 
+  const companyName = supplier.profile?.companyName || supplier.name;
+  const activity = supplier.profile?.activityField;
+
   // داده‌های ساختاریافته گوگل برای نمایش ستاره‌ها و اطلاعات شرکت در نتایج سرچ
   const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "Organization", // یا "Person" اگر تأمین‌کننده شخص حقیقی است
-  "@id": `https://darkhastyab.com/supplier/${id}#organization`,
-  "name": supplier.profile?.companyName || supplier.name, // نام تأمین‌کننده
-  "description": supplier.profile?.resume || supplier.resume || "تأمین‌کننده رسمی در درخواستیاب", // رزومه به عنوان توضیحات رسمی
-  "url": `https://darkhastyab.com/supplier/${id}`,
-  "logo": supplier.profile?.avatarUrl
-    ? `${process.env.NEXT_PUBLIC_AVATAR_URL}${supplier.profile.avatarUrl}`
-    : undefined,
-  // ... سایر فیلدها (آدرس و ریتینگ)
-  ...(supplier.rating?.count > 0 && {
-    "aggregateRating": {
-      "@type": "AggregateRating",
-      "ratingValue": supplier.rating.avg,
-      "reviewCount": supplier.rating.count,
-      "bestRating": "5",
-      "worstRating": "1",
-    },
-  }),
-};
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `https://darkhastyab.com/supplier/${id}#organization`,
+    "name": companyName,
+    "description": supplier.profile?.resume || supplier.resume || `تأمین‌کننده حوزه ${activity || "صنعتی"} در درخواست یاب`,
+    "url": `https://darkhastyab.com/supplier/${id}`,
+    "logo": supplier.profile?.avatarUrl
+      ? `${process.env.NEXT_PUBLIC_AVATAR_URL}${supplier.profile.avatarUrl}`
+      : undefined,
+    ...(activity && { "knowsAbout": activity }),
+    ...(supplier.rating?.count > 0 && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": supplier.rating.avg,
+        "reviewCount": supplier.rating.count,
+        "bestRating": "5",
+        "worstRating": "1",
+      },
+    }),
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50" dir="rtl">
       {/* تزریق Schema.org Structured Data */}
       <Script
         id="supplier-schema"
@@ -109,8 +117,14 @@ export default async function SupplierPage({ params }) {
       />
 
       <div className="max-w-5xl mx-auto px-4 py-10">
+        
+        {/* هدر تامین کننده */}
         <SupplierHeader supplier={supplier} />
 
+        {/* نمایش حوزه فعالیت دقیقا زیر هدر اصلی (یا به صورت یک بخش ظریف مجزا) */}
+        
+
+        {/* رزومه */}
         {(supplier.profile?.resume || supplier.resume) && (
           <div className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
             <h2 className="mb-3 text-lg font-bold text-slate-800">رزومه</h2>
@@ -120,6 +134,7 @@ export default async function SupplierPage({ params }) {
           </div>
         )}
 
+        {/* آخرین پیشنهادها */}
         <div className="mt-8">
           <h2 className="font-bold text-lg mb-4 text-slate-800">
             آخرین پیشنهادها

@@ -96,6 +96,7 @@ export default function SupplierHeader({ supplier }) {
   }
 
   const companyName = supplier.profile?.companyName || supplier.name;
+  const activityField = supplier.profile?.activityField;
 
   return (
     <div className="relative overflow-hidden bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-sm transition-all duration-300 hover:shadow-md">
@@ -137,6 +138,16 @@ export default function SupplierHeader({ supplier }) {
                 ({supplier.rating?.count || 0} امتیاز خریداران)
               </span>
             </div>
+
+            {/* حوزه فعالیت - اضافه شده دقیقا زیر ستاره‌ها */}
+            {activityField && (
+              <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-500 py-0.5">
+                <span className="font-medium text-slate-400">حوزه فعالیت:</span>
+                <span className="font-bold text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded-md">
+                  تامین‌کننده {activityField}
+                </span>
+              </div>
+            )}
 
             <div className="flex flex-wrap justify-center sm:justify-start items-center gap-x-4 gap-y-1 text-sm text-slate-500">
               <span className="flex items-center gap-1">

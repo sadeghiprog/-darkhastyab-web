@@ -28,6 +28,7 @@ export default function EditProfilePage() {
     nationalCode: "",
     companyName: "",
     companyRegNo: "",
+    activityField: "",
     address: "",
     resume: "",
   });
@@ -45,8 +46,8 @@ export default function EditProfilePage() {
       try {
         const data = await profileService.getProfile();
 
-        const topProfile = data?.profile;
-        const nestedProfile = topProfile?.profile;
+        const topProfile = data?.profile || data;
+        const nestedProfile = topProfile?.profile || topProfile;
 
         if (!mounted) return;
 
@@ -57,6 +58,7 @@ export default function EditProfilePage() {
           nationalCode: nestedProfile?.nationalCode || "",
           companyName: nestedProfile?.companyName || "",
           companyRegNo: nestedProfile?.companyRegNo || "",
+          activityField: nestedProfile?.activityField || "",
           address: nestedProfile?.address || "",
           resume: nestedProfile?.resume || "",
         });
@@ -159,7 +161,19 @@ export default function EditProfilePage() {
 
     try {
       setLoading(true);
-      await profileService.updateProfile(formData);
+
+      await profileService.updateProfile({
+        name: formData.name,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        nationalCode: formData.nationalCode,
+        companyName: formData.companyName,
+        companyRegNo: formData.companyRegNo,
+        activityField: formData.activityField,
+        address: formData.address,
+        resume: formData.resume,
+      });
+
       alert("اطلاعات با موفقیت ذخیره شد");
     } catch (err) {
       setError(err?.message || "خطا در ذخیره اطلاعات");
@@ -255,6 +269,14 @@ export default function EditProfilePage() {
             onChange={handleChange}
           />
 
+          <Input
+            label="حوزه فعالیت"
+            name="activityField"
+            value={formData.activityField}
+            onChange={handleChange}
+            placeholder="مثلاً تولید قطعات صنعتی، بازرگانی، مواد غذایی و..."
+          />
+
           <div>
             <label
               htmlFor="address"
@@ -304,9 +326,7 @@ export default function EditProfilePage() {
               className="w-full resize-y rounded-lg border p-2 outline-none focus:ring-2 focus:ring-blue-500"
             />
 
-            <p className="mt-1 text-xs text-gray-500">
-              حداکثر 500 کاراکتر
-            </p>
+            <p className="mt-1 text-xs text-gray-500">حداکثر 500 کاراکتر</p>
           </div>
 
           <Alert message={error} />

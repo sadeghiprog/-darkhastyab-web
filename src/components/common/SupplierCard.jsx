@@ -35,7 +35,7 @@ export default function SupplierCard({ supplier }) {
             {supplier.name || "نامعلوم"}
           </h3>
           <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
-            {supplier.companyName || "شرکت نامعلوم"}
+            {"تامین کننده "+supplier.profile.activityField || "شرکت نامعلوم"}
           </p>
         </div>
 

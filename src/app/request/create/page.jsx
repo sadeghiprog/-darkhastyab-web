@@ -13,8 +13,6 @@ import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../../context/AuthContext";
 import { apiFetch } from "../../../lib/api";
 
-
-
 export default function CreatePurchaseRequestPage() {
   const router = useRouter();
   const { user } = useAuth();
@@ -22,8 +20,8 @@ export default function CreatePurchaseRequestPage() {
   // --- مدیریت مراحل فرم (۱ تا ۴) ---
   const [step, setStep] = useState(1);
 
-  // --- تشخیص نقش ادمین ---
-  const isAdmin = user?.status === "ADMIN";
+  // --- تشخیص نقش ادمین / پارتنر ---
+  const canCreateForCustomer = ["ADMIN", "PARTNER"].includes(user?.status);
 
   // --- States برای داده‌های اولیه از سرور ---
   const [categories, setCategories] = useState([]); // دسته‌بندی‌های اصلی
@@ -34,10 +32,10 @@ export default function CreatePurchaseRequestPage() {
 
   // --- States برای مقادیر فرم ---
   const [formData, setFormData] = useState({
-    customerName: "",  // مخصوص ادمین (اختیاری)
-    customerPhone: "", // مخصوص ادمین (اختیاری)
+    customerName: "", // مخصوص ادمین/پارتنر (اختیاری)
+    customerPhone: "", // مخصوص ادمین/پارتنر (اختیاری)
     title: "",
-    categoryId: "",    // شناسه دسته اصلی
+    categoryId: "", // شناسه دسته اصلی
     subCategoryId: "", // شناسه زیردسته
     unitId: "",
     quantity: "",
@@ -97,12 +95,14 @@ export default function CreatePurchaseRequestPage() {
   // ۳. مدیریت تغییر دسته اصلی و به‌روزرسانی زیردسته‌ها
   const handleCategoryChange = (e) => {
     const selectedCatId = e.target.value;
-    const selectedCategory = categories.find(cat => cat.id === parseInt(selectedCatId));
+    const selectedCategory = categories.find(
+      (cat) => cat.id === parseInt(selectedCatId)
+    );
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       categoryId: selectedCatId,
-      subCategoryId: ""
+      subCategoryId: "",
     }));
 
     if (selectedCategory && selectedCategory.children) {
@@ -124,7 +124,7 @@ export default function CreatePurchaseRequestPage() {
     setError("");
 
     if (currentStep === 1) {
-      if (isAdmin) {
+      if (canCreateForCustomer) {
         const hasPhone = formData.customerPhone.trim().length > 0;
         const hasName = formData.customerName.trim().length > 0;
 
@@ -224,7 +224,12 @@ export default function CreatePurchaseRequestPage() {
     setError("");
     setSuccessMessage("");
 
-    if (!validateStep(1) || !validateStep(2) || !validateStep(3) || !validateStep(4)) {
+    if (
+      !validateStep(1) ||
+      !validateStep(2) ||
+      !validateStep(3) ||
+      !validateStep(4)
+    ) {
       return;
     }
 
@@ -236,15 +241,20 @@ export default function CreatePurchaseRequestPage() {
         categoryId: parseInt(formData.subCategoryId),
         unitId: parseInt(formData.unitId),
         quantity: parseFloat(formData.quantity),
-        budgetAmount: formData.budgetAmount ? parseFloat(formData.budgetAmount) : null,
-        expiresInDays: formData.expiresInDays === "0" ? null : parseInt(formData.expiresInDays),
+        budgetAmount: formData.budgetAmount
+          ? parseFloat(formData.budgetAmount)
+          : null,
+        expiresInDays:
+          formData.expiresInDays === "0"
+            ? null
+            : parseInt(formData.expiresInDays),
         provinceId: parseInt(formData.provinceId),
         cityId: parseInt(formData.cityId),
         description: formData.description,
       };
 
       const hasCustomerInfo =
-        isAdmin && formData.customerPhone.trim().length > 0;
+        canCreateForCustomer && formData.customerPhone.trim().length > 0;
 
       if (hasCustomerInfo) {
         payload.customerPhone = formData.customerPhone.trim();
@@ -258,7 +268,9 @@ export default function CreatePurchaseRequestPage() {
         await purchaseService.createRequest(payload);
       }
 
-      setSuccessMessage("درخواست خرید شما با موفقیت ثبت گردید. در حال انتقال به داشبورد...");
+      setSuccessMessage(
+        "درخواست خرید شما با موفقیت ثبت گردید. در حال انتقال به داشبورد..."
+      );
 
       setTimeout(() => {
         router.push(ROUTES.DASHBOARD);
@@ -270,7 +282,12 @@ export default function CreatePurchaseRequestPage() {
     }
   };
 
-  if (initLoading) return <div className="text-center p-10 text-gray-500">در حال بارگذاری اطلاعات اولیه...</div>;
+  if (initLoading)
+    return (
+      <div className="text-center p-10 text-gray-500">
+        در حال بارگذاری اطلاعات اولیه...
+      </div>
+    );
 
   const stepsTitle = ["مشخصات کالا", "دسته‌بندی کالا", "محل تحویل", "جزئیات نهایی"];
 
@@ -279,14 +296,18 @@ export default function CreatePurchaseRequestPage() {
       <Card>
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
-            {isAdmin ? "ثبت درخواست خرید جدید (پنل مدیریت)" : "ثبت درخواست خرید جدید"}
+            {canCreateForCustomer
+              ? "ثبت درخواست خرید جدید (پنل مدیریت / پارتنر)"
+              : "ثبت درخواست خرید جدید"}
           </h1>
 
           <div className="flex items-center justify-between w-full relative">
             <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-10" />
             <div
               className="absolute top-5 right-0 h-0.5 bg-blue-600 transition-all duration-300 -z-10"
-              style={{ width: `${((step - 1) / (stepsTitle.length - 1)) * 100}%` }}
+              style={{
+                width: `${((step - 1) / (stepsTitle.length - 1)) * 100}%`,
+              }}
             />
 
             {stepsTitle.map((title, idx) => {
@@ -296,18 +317,22 @@ export default function CreatePurchaseRequestPage() {
 
               return (
                 <div key={stepNumber} className="flex flex-col items-center flex-1">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all z-10 ${
-                    isActive
-                      ? "bg-blue-600 text-white shadow-lg ring-4 ring-blue-100"
-                      : isCompleted
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all z-10 ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-lg ring-4 ring-blue-100"
+                        : isCompleted
                         ? "bg-green-500 text-white"
                         : "bg-white border-2 border-gray-300 text-gray-400"
-                  }`}>
+                    }`}
+                  >
                     {isCompleted ? "✓" : stepNumber}
                   </div>
-                  <span className={`text-xs mt-2 font-medium hidden md:inline transition-all ${
-                    isActive ? "text-blue-600 font-bold" : "text-gray-500"
-                  }`}>
+                  <span
+                    className={`text-xs mt-2 font-medium hidden md:inline transition-all ${
+                      isActive ? "text-blue-600 font-bold" : "text-gray-500"
+                    }`}
+                  >
                     {title}
                   </span>
                 </div>
@@ -325,7 +350,7 @@ export default function CreatePurchaseRequestPage() {
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
           {step === 1 && (
             <div className="space-y-4 animate-fadeIn">
-              {isAdmin && (
+              {canCreateForCustomer && (
                 <div className="p-4 bg-amber-50/75 rounded-xl border border-amber-100 space-y-4 mb-4">
                   <p className="text-xs font-semibold text-amber-800">
                     ثبت به نام مشتری (در صورت خالی گذاشتن، درخواست به نام خود شما ثبت خواهد شد):
@@ -360,7 +385,9 @@ export default function CreatePurchaseRequestPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">واحد اندازه‌گیری *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    واحد اندازه‌گیری *
+                  </label>
                   <select
                     name="unitId"
                     value={formData.unitId}
@@ -369,7 +396,11 @@ export default function CreatePurchaseRequestPage() {
                     required
                   >
                     <option value="">انتخاب کنید...</option>
-                    {units.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                    {units.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -390,7 +421,9 @@ export default function CreatePurchaseRequestPage() {
             <div className="space-y-4 animate-fadeIn">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">دسته‌بندی اصلی *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    دسته‌بندی اصلی *
+                  </label>
                   <select
                     name="categoryId"
                     value={formData.categoryId}
@@ -399,12 +432,18 @@ export default function CreatePurchaseRequestPage() {
                     required
                   >
                     <option value="">انتخاب کنید...</option>
-                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">زیر دسته‌بندی *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    زیر دسته‌بندی *
+                  </label>
                   <select
                     name="subCategoryId"
                     value={formData.subCategoryId}
@@ -414,9 +453,15 @@ export default function CreatePurchaseRequestPage() {
                     disabled={!formData.categoryId || subCategories.length === 0}
                   >
                     <option value="">
-                      {subCategories.length === 0 ? "ابتدا دسته اصلی را انتخاب کنید" : "انتخاب زیردسته..."}
+                      {subCategories.length === 0
+                        ? "ابتدا دسته اصلی را انتخاب کنید"
+                        : "انتخاب زیردسته..."}
                     </option>
-                    {subCategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+                    {subCategories.map((sub) => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -427,7 +472,9 @@ export default function CreatePurchaseRequestPage() {
             <div className="space-y-4 animate-fadeIn">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">استان محل تحویل *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    استان محل تحویل *
+                  </label>
                   <select
                     name="provinceId"
                     value={formData.provinceId}
@@ -436,12 +483,18 @@ export default function CreatePurchaseRequestPage() {
                     required
                   >
                     <option value="">انتخاب استان...</option>
-                    {provinces.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {provinces.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">شهر محل تحویل *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    شهر محل تحویل *
+                  </label>
                   <select
                     name="cityId"
                     value={formData.cityId}
@@ -451,7 +504,11 @@ export default function CreatePurchaseRequestPage() {
                     disabled={!formData.provinceId}
                   >
                     <option value="">انتخاب شهر...</option>
-                    {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {cities.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -471,7 +528,9 @@ export default function CreatePurchaseRequestPage() {
                 />
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">معتبر تا چند روز آینده؟</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    معتبر تا چند روز آینده؟
+                  </label>
                   <select
                     name="expiresInDays"
                     value={formData.expiresInDays}
@@ -489,7 +548,9 @@ export default function CreatePurchaseRequestPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">توضیحات تکمیلی</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  توضیحات تکمیلی
+                </label>
                 <textarea
                   name="description"
                   value={formData.description}
