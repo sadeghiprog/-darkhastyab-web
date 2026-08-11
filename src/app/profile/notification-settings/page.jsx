@@ -13,6 +13,12 @@ const VAPID_PUBLIC_KEY =
 
 const API_ENDPOINTS = {
   categories: `${API_BASE_URL}/categories`,
+  provinces: `${API_BASE_URL}/locations/provinces`,
+  provincesFallback: `${API_BASE_URL}/provinces`,
+  cities: (provinceId) =>
+    `${API_BASE_URL}/locations/cities?provinceId=${provinceId}`,
+  citiesFallback: (provinceId) =>
+    `${API_BASE_URL}/provinces/${provinceId}/cities`,
   notificationCategories: `${API_BASE_URL}/notification/categories`,
   subscribe: `${API_BASE_URL}/notification/subscribe`,
   unsubscribe: `${API_BASE_URL}/notification/unsubscribe`,
@@ -20,31 +26,24 @@ const API_ENDPOINTS = {
 
 function safeArray(value) {
   if (Array.isArray(value)) return value;
-  if (Array.isArray(value?.data)) return value.data;
-  if (Array.isArray(value?.categories)) return value.categories;
-  if (Array.isArray(value?.items)) return value.items;
-  if (Array.isArray(value?.result)) return value.result;
+
+  if (value && typeof value === "object") {
+    if (Array.isArray(value.data)) return value.data;
+    if (Array.isArray(value.categories)) return value.categories;
+    if (Array.isArray(value.provinces)) return value.provinces;
+    if (Array.isArray(value.cities)) return value.cities;
+    if (Array.isArray(value.items)) return value.items;
+    if (Array.isArray(value.result)) return value.result;
+    if (Array.isArray(value.results)) return value.results;
+  }
+
   return [];
 }
 
-function normalizeSelectedCategoryIds(payload) {
-  return safeArray(payload)
-    .map((item) => {
-      if (typeof item === "number" || typeof item === "string") {
-        return String(item);
-      }
-
-      if (item?.categoryId != null) {
-        return String(item.categoryId);
-      }
-
-      if (item?.id != null) {
-        return String(item.id);
-      }
-
-      return null;
-    })
-    .filter(Boolean);
+function normalizeId(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const numberValue = Number(value);
+  return Number.isNaN(numberValue) ? null : numberValue;
 }
 
 function flattenCategories(items, result = [], parentName = "") {
@@ -106,7 +105,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 8000) {
   }
 }
 
-function withTimeout(promise, timeout = 8000, fallback = null) {
+function withTimeout(promise, timeout = 12000, fallback = null) {
   return Promise.race([
     promise,
     new Promise((resolve) => {
@@ -115,58 +114,151 @@ function withTimeout(promise, timeout = 8000, fallback = null) {
   ]);
 }
 
-async function getAllCategories() {
-  const res = await fetchWithTimeout(API_ENDPOINTS.categories, {
+function debugLog(label, ...args) {
+  console.log(`[NotificationSettings][${label}]`, ...args);
+}
+
+async function fetchListFromUrl(url, label, errorMessage) {
+  debugLog(label, "fetch start:", url);
+
+  const res = await fetchWithTimeout(url, {
     method: "GET",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
   });
 
   const data = await safeJson(res);
 
+  debugLog(label, "response status:", res.status);
+  debugLog(label, "raw response:", data);
+
   if (!res.ok) {
-    throw new Error(data?.message || "خطا در دریافت دسته‌بندی‌ها.");
+    throw new Error(data?.message || errorMessage || "خطا در دریافت داده‌ها.");
   }
 
-  return safeArray(data);
+  const list = safeArray(data);
+  debugLog(label, "parsed count:", list.length);
+
+  return list;
 }
 
-async function getNotificationCategories() {
+async function getAllCategories() {
+  return fetchListFromUrl(
+    API_ENDPOINTS.categories,
+    "categories",
+    "خطا در دریافت دسته‌بندی‌ها."
+  );
+}
+
+async function getAllProvinces() {
+  try {
+    const primary = await fetchListFromUrl(
+      API_ENDPOINTS.provinces,
+      "provinces",
+      "خطا در دریافت استان‌ها."
+    );
+
+    if (primary.length > 0) return primary;
+
+    debugLog("provinces", "primary endpoint returned empty array");
+    return primary;
+  } catch (err) {
+    debugLog("provinces", "primary endpoint failed, trying fallback:", err);
+
+    try {
+      return await fetchListFromUrl(
+        API_ENDPOINTS.provincesFallback,
+        "provinces-fallback",
+        "خطا در دریافت استان‌ها از مسیر قدیمی."
+      );
+    } catch (fallbackErr) {
+      debugLog("provinces", "fallback endpoint failed:", fallbackErr);
+      throw err;
+    }
+  }
+}
+
+async function getCitiesOfProvince(provinceId) {
+  if (!provinceId) return [];
+
+  try {
+    const primary = await fetchListFromUrl(
+      API_ENDPOINTS.cities(provinceId),
+      `cities:${provinceId}`,
+      "خطا در دریافت شهرها."
+    );
+
+    if (primary.length > 0) return primary;
+
+    debugLog(`cities:${provinceId}`, "primary endpoint returned empty array");
+    return primary;
+  } catch (err) {
+    debugLog(
+      `cities:${provinceId}`,
+      "primary endpoint failed, trying fallback:",
+      err
+    );
+
+    try {
+      return await fetchListFromUrl(
+        API_ENDPOINTS.citiesFallback(provinceId),
+        `cities-fallback:${provinceId}`,
+        "خطا در دریافت شهرها از مسیر قدیمی."
+      );
+    } catch (fallbackErr) {
+      debugLog(`cities:${provinceId}`, "fallback endpoint failed:", fallbackErr);
+      throw err;
+    }
+  }
+}
+
+async function getNotificationSettings() {
   const res = await fetchWithTimeout(API_ENDPOINTS.notificationCategories, {
     method: "GET",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
   });
 
   const data = await safeJson(res);
+
+  debugLog("notification-settings", "response status:", res.status);
+  debugLog("notification-settings", "raw response:", data);
 
   if (!res.ok) {
     throw new Error(data?.message || "خطا در دریافت تنظیمات نوتیفیکیشن.");
   }
 
-  return normalizeSelectedCategoryIds(data);
+  const list = safeArray(data);
+  debugLog("notification-settings", "parsed count:", list.length);
+
+  return list;
 }
 
-async function saveNotificationCategories(categoryIds) {
+async function saveNotificationSettings(items) {
+  const payload = {
+    items: items.map((item) => ({
+      categoryId: Number(item.categoryId),
+      provinceId: normalizeId(item.provinceId),
+      cityId: normalizeId(item.cityId),
+    })),
+  };
+
+  debugLog("save-settings", "payload:", payload);
+
   const res = await fetchWithTimeout(API_ENDPOINTS.notificationCategories, {
     method: "PUT",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      categoryIds: categoryIds.map((id) => Number(id)),
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 
   const data = await safeJson(res);
 
+  debugLog("save-settings", "response status:", res.status);
+  debugLog("save-settings", "raw response:", data);
+
   if (!res.ok) {
-    throw new Error(data?.message || "خطا در ذخیره دسته‌بندی‌های نوتیفیکیشن.");
+    throw new Error(data?.message || "خطا در ذخیره تنظیمات نوتیفیکیشن.");
   }
 
   return data;
@@ -181,7 +273,13 @@ async function registerPushServiceWorker() {
     throw new Error("مرورگر شما از Service Worker پشتیبانی نمی‌کند.");
   }
 
-  return navigator.serviceWorker.register("/service-worker.js");
+  debugLog("push", "registering service worker...");
+
+  const registration = await navigator.serviceWorker.register("/service-worker.js");
+
+  debugLog("push", "service worker registered:", registration.scope);
+
+  return registration;
 }
 
 async function getExistingSubscription() {
@@ -192,20 +290,24 @@ async function getExistingSubscription() {
 
     const registrations = await navigator.serviceWorker.getRegistrations();
 
-    if (!registrations || registrations.length === 0) {
-      return null;
-    }
+    debugLog("push", "registrations count:", registrations?.length || 0);
+
+    if (!registrations || registrations.length === 0) return null;
 
     for (const registration of registrations) {
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
+        debugLog("push", "existing subscription found:", subscription.endpoint);
         return subscription;
       }
     }
 
+    debugLog("push", "no existing subscription found");
+
     return null;
-  } catch {
+  } catch (err) {
+    debugLog("push", "getExistingSubscription error:", err);
     return null;
   }
 }
@@ -227,34 +329,44 @@ async function subscribeToPush() {
     throw new Error("کلید عمومی VAPID در فرانت تنظیم نشده است.");
   }
 
+  debugLog("push", "requesting permission...");
+
   const permission = await Notification.requestPermission();
+
+  debugLog("push", "permission result:", permission);
 
   if (permission !== "granted") {
     throw new Error("اجازه ارسال نوتیفیکیشن توسط کاربر داده نشد.");
   }
 
   const registration = await registerPushServiceWorker();
+
   let subscription = await registration.pushManager.getSubscription();
 
   if (!subscription) {
+    debugLog("push", "creating new subscription...");
+
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
+  } else {
+    debugLog("push", "reusing existing subscription...");
   }
+
+  debugLog("push", "subscription endpoint:", subscription.endpoint);
 
   const res = await fetchWithTimeout(API_ENDPOINTS.subscribe, {
     method: "POST",
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      subscription: subscription.toJSON(),
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subscription: subscription.toJSON() }),
   });
 
   const data = await safeJson(res);
+
+  debugLog("push", "subscribe response status:", res.status);
+  debugLog("push", "subscribe raw response:", data);
 
   if (!res.ok) {
     throw new Error(data?.message || "خطا در ثبت اشتراک نوتیفیکیشن.");
@@ -266,21 +378,25 @@ async function subscribeToPush() {
 async function unsubscribeFromPush() {
   const subscription = await getExistingSubscription();
 
-  if (!subscription) return;
+  if (!subscription) {
+    debugLog("push", "no subscription to unsubscribe");
+    return;
+  }
 
   const endpoint = subscription.endpoint;
+
+  debugLog("push", "unsubscribing endpoint:", endpoint);
 
   try {
     await fetchWithTimeout(API_ENDPOINTS.unsubscribe, {
       method: "POST",
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ endpoint }),
     });
   } finally {
     await subscription.unsubscribe();
+    debugLog("push", "local subscription unsubscribed");
   }
 }
 
@@ -290,17 +406,18 @@ function getPermissionLabel(status) {
   return "هنوز تعیین نشده";
 }
 
-function getCategoryLabel(category) {
-  if (!category) return "بدون نام";
-  return category.fullName || category.name || "بدون نام";
-}
-
 export default function NotificationSettingsPage() {
   const [categories, setCategories] = useState([]);
-  const [selectedIds, setSelectedIds] = useState([]);
+  const [provinces, setProvinces] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+
+  const [selectedItems, setSelectedItems] = useState([]);
 
   const [selectedParentId, setSelectedParentId] = useState("");
   const [selectedChildId, setSelectedChildId] = useState("");
+  const [selectedProvinceId, setSelectedProvinceId] = useState("");
+  const [selectedCityId, setSelectedCityId] = useState("");
 
   const [permissionStatus, setPermissionStatus] = useState("default");
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -330,18 +447,12 @@ export default function NotificationSettingsPage() {
     return Array.isArray(parent?.children) ? parent.children : [];
   }, [parentCategories, selectedParentId]);
 
-  const selectedCategories = useMemo(() => {
-    return selectedIds
-      .map((id) => flatCategories.find((category) => category.id === String(id)))
-      .filter(Boolean);
-  }, [selectedIds, flatCategories]);
-
-  const hasSelectedCategories = selectedIds.length > 0;
-
   useEffect(() => {
     let isMounted = true;
 
     async function loadPage() {
+      debugLog("init", "page loading started");
+
       setInitLoading(true);
       setError("");
       setSuccessMessage("");
@@ -349,53 +460,73 @@ export default function NotificationSettingsPage() {
       try {
         if (typeof window !== "undefined" && "Notification" in window) {
           setPermissionStatus(Notification.permission);
+          debugLog("init", "notification permission:", Notification.permission);
         }
 
-        const categoriesPromise = getAllCategories().catch((err) => {
-          console.error("Categories error:", err);
-          return [];
-        });
-
-        const selectedPromise = getNotificationCategories().catch((err) => {
-          console.error("Notification categories error:", err);
-          return [];
-        });
-
-        const subscriptionPromise = getExistingSubscription().catch((err) => {
-          console.error("Subscription error:", err);
-          return null;
-        });
-
-        const [allCategories, userSelectedIds, existingSubscription] =
-          await withTimeout(
-            Promise.all([
-              categoriesPromise,
-              selectedPromise,
-              subscriptionPromise,
-            ]),
-            10000,
-            [[], [], null]
-          );
-
-        if (!isMounted) return;
-
-        setCategories(safeArray(allCategories));
-        setSelectedIds(
-          Array.isArray(userSelectedIds)
-            ? userSelectedIds.map((id) => String(id))
-            : []
+        const results = await withTimeout(
+          Promise.allSettled([
+            getAllCategories(),
+            getAllProvinces(),
+            getNotificationSettings(),
+            getExistingSubscription(),
+          ]),
+          12000,
+          null
         );
-        setPushEnabled(Boolean(existingSubscription));
-      } catch (err) {
+
+        if (!results) {
+          throw new Error("زمان دریافت اطلاعات اولیه تمام شد.");
+        }
+
+        const [
+          categoriesResult,
+          provincesResult,
+          settingsResult,
+          subscriptionResult,
+        ] = results;
+
+        debugLog("init", "Promise.allSettled result:", {
+          categoriesResult,
+          provincesResult,
+          settingsResult,
+          subscriptionResult,
+        });
+
         if (!isMounted) return;
 
-        setCategories([]);
-        setSelectedIds([]);
-        setPushEnabled(false);
-        setError(err?.message || "خطا در دریافت اطلاعات صفحه.");
+        const categoriesData =
+          categoriesResult?.status === "fulfilled" ? categoriesResult.value : [];
+
+        const provincesData =
+          provincesResult?.status === "fulfilled" ? provincesResult.value : [];
+
+        const settingsData =
+          settingsResult?.status === "fulfilled" ? settingsResult.value : [];
+
+        const subscriptionData =
+          subscriptionResult?.status === "fulfilled"
+            ? subscriptionResult.value
+            : null;
+
+        debugLog("init", "categories count:", categoriesData.length);
+        debugLog("init", "provinces count:", provincesData.length);
+        debugLog("init", "settings count:", settingsData.length);
+        debugLog("init", "has subscription:", Boolean(subscriptionData));
+
+        setCategories(safeArray(categoriesData));
+        setProvinces(safeArray(provincesData));
+        setSelectedItems(safeArray(settingsData));
+        setPushEnabled(Boolean(subscriptionData));
+      } catch (err) {
+        debugLog("init", "fatal error:", err);
+
+        if (!isMounted) return;
+
+        setError(err?.message || "خطا در دریافت اطلاعات اولیه.");
       } finally {
         if (isMounted) {
           setInitLoading(false);
+          debugLog("init", "page loading finished");
         }
       }
     }
@@ -407,7 +538,48 @@ export default function NotificationSettingsPage() {
     };
   }, []);
 
-  const handleAddCategory = () => {
+  useEffect(() => {
+    if (!selectedProvinceId) return;
+
+    let isMounted = true;
+
+    async function loadCities() {
+      setLoadingCities(true);
+      setError("");
+
+      debugLog("cities", "loading for province:", selectedProvinceId);
+
+      try {
+        const data = await getCitiesOfProvince(selectedProvinceId);
+
+        if (!isMounted) return;
+
+        debugLog("cities", "loaded count:", data.length);
+        debugLog("cities", "loaded data:", data);
+
+        setCities(safeArray(data));
+      } catch (err) {
+        debugLog("cities", "error:", err);
+
+        if (!isMounted) return;
+
+        setCities([]);
+        setError(err?.message || "خطا در دریافت شهرها.");
+      } finally {
+        if (isMounted) {
+          setLoadingCities(false);
+        }
+      }
+    }
+
+    loadCities();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedProvinceId]);
+
+  const handleAddItem = () => {
     setError("");
     setSuccessMessage("");
 
@@ -416,30 +588,102 @@ export default function NotificationSettingsPage() {
       return;
     }
 
-    if (childCategories.length > 0 && !selectedChildId) {
-      setError("لطفاً یک زیردسته انتخاب کنید.");
+    const targetCategoryId = selectedChildId || selectedParentId;
+    const targetProvinceId = normalizeId(selectedProvinceId);
+    const targetCityId = normalizeId(selectedCityId);
+
+    if (Number.isNaN(Number(targetCategoryId))) {
+      setError("شناسه دسته معتبر نیست.");
       return;
     }
 
-    const targetId = selectedChildId || selectedParentId;
+    const isDuplicate = selectedItems.some((item) => {
+      return (
+        Number(item.categoryId) === Number(targetCategoryId) &&
+        normalizeId(item.provinceId) === targetProvinceId &&
+        normalizeId(item.cityId) === targetCityId
+      );
+    });
 
-    if (selectedIds.includes(String(targetId))) {
-      setError("این دسته‌بندی قبلاً انتخاب شده است.");
+    if (isDuplicate) {
+      setError("این ترکیب دسته‌بندی و موقعیت جغرافیایی قبلاً در لیست شما وجود دارد.");
       return;
     }
 
-    setSelectedIds((prev) => [...prev, String(targetId)]);
+    const categoryObj = flatCategories.find(
+      (category) => String(category.id) === String(targetCategoryId)
+    );
+
+    const provinceObj =
+      targetProvinceId !== null
+        ? provinces.find((province) => String(province.id) === String(targetProvinceId))
+        : null;
+
+    const cityObj =
+      targetCityId !== null
+        ? cities.find((city) => String(city.id) === String(targetCityId))
+        : null;
+
+    const newItem = {
+      categoryId: Number(targetCategoryId),
+      provinceId: targetProvinceId,
+      cityId: targetCityId,
+      _tempCategoryName: categoryObj?.fullName || "دسته نامشخص",
+      _tempProvinceName: provinceObj?.name || null,
+      _tempCityName: cityObj?.name || null,
+    };
+
+    debugLog("ui", "adding item:", newItem);
+
+    setSelectedItems((prev) => [...prev, newItem]);
+
     setSelectedParentId("");
     setSelectedChildId("");
+    setSelectedProvinceId("");
+    setSelectedCityId("");
+    setCities([]);
   };
 
-  const handleRemoveCategory = (categoryId) => {
+  const handleRemoveItem = (indexToRemove) => {
     setError("");
     setSuccessMessage("");
+    setSelectedItems((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
 
-    setSelectedIds((prev) =>
-      prev.filter((id) => String(id) !== String(categoryId))
-    );
+  const getItemLabel = (item) => {
+    const category =
+      item._tempCategoryName ||
+      flatCategories.find((categoryItem) => {
+        return String(categoryItem.id) === String(item.categoryId);
+      })?.fullName ||
+      item.category?.name ||
+      item.category?.title ||
+      `شناسه دسته: ${item.categoryId}`;
+
+    const provinceId = normalizeId(item.provinceId);
+    const cityId = normalizeId(item.cityId);
+
+    if (provinceId === null) {
+      return `${category} ← [سراسر کشور]`;
+    }
+
+    const provinceName =
+      item._tempProvinceName ||
+      item.province?.name ||
+      provinces.find((province) => String(province.id) === String(provinceId))?.name ||
+      `استان ${provinceId}`;
+
+    if (cityId === null) {
+      return `${category} ← [کل استان ${provinceName}]`;
+    }
+
+    const cityName =
+      item._tempCityName ||
+      item.city?.name ||
+      cities.find((city) => String(city.id) === String(cityId))?.name ||
+      `شهر ${cityId}`;
+
+    return `${category} ← [${provinceName} / ${cityName}]`;
   };
 
   const handleSaveSettings = async () => {
@@ -448,9 +692,13 @@ export default function NotificationSettingsPage() {
       setError("");
       setSuccessMessage("");
 
-      await saveNotificationCategories(selectedIds);
+      if (selectedItems.length === 0) {
+        throw new Error("ابتدا حداقل یک فیلتر را به لیست اضافه کنید.");
+      }
 
-      setSuccessMessage("تنظیمات نوتیفیکیشن با موفقیت ذخیره شد.");
+      await saveNotificationSettings(selectedItems);
+
+      setSuccessMessage("تنظیمات اعلان‌ها با موفقیت ذخیره شد.");
     } catch (err) {
       setError(err?.message || "خطا در ذخیره تنظیمات.");
     } finally {
@@ -464,11 +712,11 @@ export default function NotificationSettingsPage() {
       setError("");
       setSuccessMessage("");
 
-      if (!hasSelectedCategories) {
-        throw new Error("ابتدا حداقل یک دسته‌بندی را انتخاب کنید.");
+      if (selectedItems.length === 0) {
+        throw new Error("ابتدا حداقل یک ترکیب دسته‌بندی و لوکیشن را انتخاب و اضافه کنید.");
       }
 
-      await saveNotificationCategories(selectedIds);
+      await saveNotificationSettings(selectedItems);
       await subscribeToPush();
 
       setPushEnabled(true);
@@ -479,6 +727,7 @@ export default function NotificationSettingsPage() {
 
       setSuccessMessage("نوتیفیکیشن مرورگر با موفقیت فعال شد.");
     } catch (err) {
+      debugLog("push", "enable error:", err);
       setError(err?.message || "خطا در فعال‌سازی نوتیفیکیشن.");
     } finally {
       setPushLoading(false);
@@ -492,6 +741,7 @@ export default function NotificationSettingsPage() {
       setSuccessMessage("");
 
       await unsubscribeFromPush();
+
       setPushEnabled(false);
 
       if (typeof window !== "undefined" && "Notification" in window) {
@@ -500,6 +750,7 @@ export default function NotificationSettingsPage() {
 
       setSuccessMessage("نوتیفیکیشن مرورگر غیرفعال شد.");
     } catch (err) {
+      debugLog("push", "disable error:", err);
       setError(err?.message || "خطا در غیرفعال‌سازی نوتیفیکیشن.");
     } finally {
       setPushLoading(false);
@@ -527,13 +778,9 @@ export default function NotificationSettingsPage() {
           </h1>
 
           <p className="text-sm text-gray-500 text-center leading-7">
-            دسته‌بندی‌های موردنظر خود را انتخاب کنید تا هنگام انتشار درخواست خرید
-            جدید، نوتیفیکیشن مرورگر دریافت کنید.
+            دسته‌بندی‌ها و مناطق جغرافیایی مورد نظر خود را مشخص کنید تا به محض
+            انتشار درخواست‌های منطبق، مطلع شوید.
           </p>
-        </div>
-
-        <div className="mb-3 text-xs text-gray-400 text-center">
-          API: {API_BASE_URL}
         </div>
 
         <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -556,8 +803,8 @@ export default function NotificationSettingsPage() {
 
         {permissionStatus === "denied" && (
           <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-            دسترسی نوتیفیکیشن در مرورگر شما مسدود شده است. برای فعال‌سازی، باید
-            از تنظیمات مرورگر مجوز اعلان را دوباره فعال کنید.
+            دسترسی نوتیفیکیشن در مرورگر شما مسدود شده است. برای فعال‌سازی مجدد،
+            باید مجوزها را در بخش تنظیمات آدرس‌بار مرورگر خود آزاد کنید.
           </div>
         )}
 
@@ -571,14 +818,15 @@ export default function NotificationSettingsPage() {
 
         <div className="space-y-4 mb-8">
           <h2 className="text-base font-bold text-gray-800">
-            انتخاب دسته‌بندی‌ها
+            پیکربندی فیلتر جدید
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-xs font-medium text-gray-600">
                 دسته اصلی
               </label>
+
               <select
                 value={selectedParentId}
                 onChange={(e) => {
@@ -590,6 +838,7 @@ export default function NotificationSettingsPage() {
                 className="w-full rounded-lg border border-gray-300 p-3 text-sm outline-none focus:border-blue-500"
               >
                 <option value="">انتخاب دسته اصلی</option>
+
                 {parentCategories.map((category) => (
                   <option key={category.id} value={String(category.id)}>
                     {category.name || category.title || "بدون نام"}
@@ -599,9 +848,10 @@ export default function NotificationSettingsPage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                زیردسته
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                زیردسته اختیاری
               </label>
+
               <select
                 value={selectedChildId}
                 onChange={(e) => {
@@ -616,9 +866,10 @@ export default function NotificationSettingsPage() {
                   {!selectedParentId
                     ? "ابتدا دسته اصلی را انتخاب کنید"
                     : childCategories.length === 0
-                    ? "این دسته زیردسته ندارد"
-                    : "انتخاب زیردسته"}
+                      ? "این دسته زیردسته ندارد"
+                      : "همه زیردسته‌ها"}
                 </option>
+
                 {childCategories.map((category) => (
                   <option key={category.id} value={String(category.id)}>
                     {category.name || category.title || "بدون نام"}
@@ -627,38 +878,107 @@ export default function NotificationSettingsPage() {
               </select>
             </div>
 
-            <div className="flex items-end">
-              <Button
-                type="button"
-                onClick={handleAddCategory}
-                className="w-full py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                استان اختیاری
+              </label>
+
+              <select
+                value={selectedProvinceId}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  debugLog("ui", "province changed:", value);
+
+                  setSelectedProvinceId(value);
+                  setSelectedCityId("");
+                  setCities([]);
+                  setError("");
+                  setSuccessMessage("");
+                }}
+                className="w-full rounded-lg border border-gray-300 p-3 text-sm outline-none focus:border-blue-500"
               >
-                افزودن به لیست
-              </Button>
+                <option value="">سراسر کشور</option>
+
+                {provinces.map((province) => (
+                  <option key={province.id} value={String(province.id)}>
+                    {province.name || province.title || `استان ${province.id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                شهر اختیاری
+              </label>
+
+              <select
+                value={selectedCityId}
+                onChange={(e) => {
+                  setSelectedCityId(e.target.value);
+                  setError("");
+                  setSuccessMessage("");
+                }}
+                disabled={!selectedProvinceId || loadingCities || cities.length === 0}
+                className="w-full rounded-lg border border-gray-300 p-3 text-sm outline-none focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                <option value="">
+                  {!selectedProvinceId
+                    ? "ابتدا استان را انتخاب کنید"
+                    : loadingCities
+                      ? "در حال بارگذاری شهرها..."
+                      : cities.length === 0
+                        ? "شهری یافت نشد"
+                        : "همه شهرهای استان"}
+                </option>
+
+                {cities.map((city) => (
+                  <option key={city.id} value={String(city.id)}>
+                    {city.name || city.title || `شهر ${city.id}`}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white p-4">
+          <div className="flex justify-end pt-2">
+            <Button
+              type="button"
+              onClick={handleAddItem}
+              className="w-full md:w-auto px-8 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-lg font-medium"
+            >
+              افزودن این فیلتر به لیست
+            </Button>
+          </div>
+
+          <div className="rounded-xl border border-gray-200 bg-white p-4 mt-4">
             <div className="mb-3 text-sm font-medium text-gray-700">
-              دسته‌بندی‌های انتخاب‌شده
+              لیست اشتراک‌های شما
             </div>
 
-            {selectedCategories.length === 0 ? (
-              <div className="text-sm text-gray-500">
-                هنوز هیچ دسته‌بندی‌ای انتخاب نشده است.
+            {selectedItems.length === 0 ? (
+              <div className="text-sm text-gray-500 text-center py-4">
+                هنوز هیچ فیلتر اعلانی ایجاد نکرده‌اید.
               </div>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {selectedCategories.map((category) => (
+              <div className="flex flex-col gap-2">
+                {selectedItems.map((item, index) => (
                   <div
-                    key={category.id}
-                    className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-sm text-blue-700"
+                    key={`${item.categoryId}-${item.provinceId ?? "all"}-${
+                      item.cityId ?? "all"
+                    }-${index}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50/50 px-4 py-2.5 text-sm text-blue-800"
                   >
-                    <span>{getCategoryLabel(category)}</span>
+                    <span className="font-medium text-right leading-6">
+                      {getItemLabel(item)}
+                    </span>
+
                     <button
                       type="button"
-                      onClick={() => handleRemoveCategory(category.id)}
-                      className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-xs text-blue-700 hover:bg-red-100 hover:text-red-600"
+                      onClick={() => handleRemoveItem(index)}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-base font-bold text-blue-700 transition-colors hover:bg-red-100 hover:text-red-600"
+                      title="حذف فیلتر"
                     >
                       ×
                     </button>
@@ -670,8 +990,13 @@ export default function NotificationSettingsPage() {
 
           {flatCategories.length === 0 && (
             <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-              دسته‌بندی‌ای از سرور دریافت نشد. آدرس API یا خروجی endpoint
-              دسته‌بندی‌ها را بررسی کنید.
+              داده‌ای از دسته‌بندی‌ها دریافت نشد. لطفاً ارتباط با سرور را بررسی کنید.
+            </div>
+          )}
+
+          {provinces.length === 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              هیچ استانی دریافت نشد. لطفاً لاگ کنسول مرورگر و پاسخ API را بررسی کنید.
             </div>
           )}
         </div>
