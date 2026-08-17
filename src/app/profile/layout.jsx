@@ -34,6 +34,8 @@ const PARTNER_TABS = [
 const ADMIN_TABS = [
   { href: "/profile/admin/partners", label: "جزئیات همکاران" },
   { href: "/profile/admin/users", label: "همه کاربران" },
+  { href: "/profile/admin/offers", label: "پیشنهاد ها" },
+  { href: "/profile/admin/requests", label: "مدیریت درخواست ها" },
   { href: "/profile/admin/withdrawals", label: "درخواست‌های برداشت" },
   { href: "/profile/admin/categories", label: "دسته‌بندی‌ها" },
   { href: "/profile/admin/provinces", label: "استان‌ها" },
