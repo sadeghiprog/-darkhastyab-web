@@ -7,7 +7,7 @@ import { ExternalLink, Smartphone } from "lucide-react";
  * بر اساس AndroidManifest واقعی شما مقدار Scheme برابر "myb2bmobile" است.
  * در صورتی که بعداً با prebuild آن را به darkhastyab تغییر دادید، این ثابت را تغییر دهید.
  */
-const SCHEME_NAME = "myb2bmobile";
+const SCHEME_NAME = "darkhastyab";
 const PACKAGE_NAME = "com.darkhastyab.app";
 
 export default function PaymentResultClient({ serverParams = {} }) {
