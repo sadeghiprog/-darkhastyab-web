@@ -2,23 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 
-/**
- * Props:
- *  - serverParams: { status, transactionId, errorCode }
- *
- * اهداف:
- *  - پارامترها را از serverParams و در صورت نیاز از window.location بدست آورد.
- *  - پنل دیباگ کامل برای گوشی/ویندوز نمایش دهد.
- *  - دکمه بازگشت به اپلیکیشن را نگهدارد.
- */
-
 export default function PaymentResultClient({ serverParams = {} }) {
-  // مقادیر اولیه از سرور (ممکن است خالی باشند)
   const [status, setStatus] = useState(serverParams.status || "");
   const [transactionId, setTransactionId] = useState(serverParams.transactionId || "");
   const [errorCode, setErrorCode] = useState(serverParams.errorCode || "");
 
-  // حالت‌های دیباگ و Hydration
   const [mounted, setMounted] = useState(false);
   const [heartbeat, setHeartbeat] = useState(0);
   const [browserReady, setBrowserReady] = useState(false);
@@ -37,11 +25,9 @@ export default function PaymentResultClient({ serverParams = {} }) {
   };
 
   useEffect(() => {
-    // mounted + JS active
     setMounted(true);
     setBrowserReady(true);
 
-    // خواندن پارامترها از window.location اگر سرور چیزی نفرستاده
     try {
       const url = typeof window !== "undefined" ? new URL(window.location.href) : null;
       if (url) {
@@ -58,13 +44,10 @@ export default function PaymentResultClient({ serverParams = {} }) {
         setBrowserProtocol(window.location.protocol);
         setBrowserUserAgent(window.navigator.userAgent || "");
       }
-
-      // نادیده گرفتن خطای استفاده از navigator در SSR چون این useEffect فقط در کلاینت اجرا می‌شود
     } catch (e) {
       addLog("error", "خطا در خواندن URL کلاینت", { message: e.message });
     }
 
-    // بررسی اسکریپت‌های صفحه
     try {
       const scripts = Array.from(document.scripts || []);
       setScriptCount(scripts.length);
@@ -79,28 +62,19 @@ export default function PaymentResultClient({ serverParams = {} }) {
       addLog("error", "خطا در خواندن تگ‌های script", { message: e.message });
     }
 
-    // خواندن errorهای اولیه که ممکن است توسط inline script سرور ثبت شده باشند
     if (typeof window !== "undefined" && window.__EARLY_DEBUG__) {
       setEarlyErrors(window.__EARLY_DEBUG__.errors || []);
       addLog("info", "Early debug found", window.__EARLY_DEBUG__);
     }
 
-    // بررسی localhost: اگر URL شامل localhost بود، بنر نمایش بده تا IP تست شود
     if (typeof window !== "undefined" && /localhost|127\\.0\\.0\\.1/.test(window.location.host)) {
       setIsLocalhostNotice(true);
-      addLog("warn", "در حال استفاده از localhost — ممکن است دستگاه‌های دیگر نتوانند به این آدرس متصل شوند");
     }
 
     addLog("success", "کامپوننت کلاینت مانت شد (Hydration)");
 
-    // شنونده‌ها برای خطاها
     const onError = (ev) => {
-      addLog("error", "Runtime Error", {
-        message: ev.message,
-        filename: ev.filename,
-        lineno: ev.lineno,
-        colno: ev.colno,
-      });
+      addLog("error", "Runtime Error", { message: ev.message });
     };
     const onRejection = (ev) => {
       addLog("error", "Unhandled Rejection", { reason: ev.reason ? ev.reason.message || String(ev.reason) : String(ev.reason) });
@@ -109,7 +83,6 @@ export default function PaymentResultClient({ serverParams = {} }) {
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onRejection);
 
-    // Heartbeat
     const t = setInterval(() => {
       setHeartbeat((h) => h + 1);
     }, 1000);
@@ -121,112 +94,80 @@ export default function PaymentResultClient({ serverParams = {} }) {
     };
   }, [serverParams]);
 
-  // دکمه بازگشت به اپلیکیشن (deep link)
-  const appDeepLink = `darkhastyab://payment-result?status=${encodeURIComponent(
-    status || ""
-  )}&transactionId=${encodeURIComponent(transactionId || "")}&errorCode=${encodeURIComponent(errorCode || "")}`;
-
+  /**
+   * تابع اصلی برای باز کردن اپلیکیشن با استفاده از Intent برای اندروید
+   */
   const handleOpenApp = () => {
-    addLog("info", "تلاش برای باز کردن اپلیکیشن", { link: appDeepLink });
-    if (typeof window !== "undefined") {
-      window.location.href = appDeepLink;
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    // ۱. ساخت لینک استاندارد (برای iOS یا مرورگرهای معمولی)
+    const standardScheme = `darkhastyab://payment-result?status=${encodeURIComponent(status)}&transactionId=${encodeURIComponent(transactionId)}&errorCode=${encodeURIComponent(errorCode)}`;
+
+    // ۲. ساخت لینک Intent (فوق‌العاده برای اندروید و مرورگرهای داخلی)
+    // ساختار: intent://[path]#Intent;scheme=[scheme];package=[package_name];end
+    // نکته: اگر Package Name اپلیکیشن خود را نمی‌دانید، این بخش را می‌توانید حذف کنید، اما با آن ۱۰۰٪ دقیق‌تر است.
+    // فرض می‌کنیم پکیج شما com.darkhastyab.app است (اگر متفاوت است، در کد جایگزین کنید)
+    const packageName = "com.darkhastyab.app"; // <--- حتما این را با Package Name واقعی اپلیکیشن خود جایگزین کنید
+    const intentScheme = `intent://payment-result?status=${encodeURIComponent(status)}&transactionId=${encodeURIComponent(transactionId)}&errorCode=${encodeURIComponent(errorCode)}#Intent;scheme=darkhastyab;package=${packageName};end`;
+
+    addLog("info", "Attempting to open app", { 
+      isAndroid, 
+      usedIntent: isAndroid, 
+      link: isAndroid ? intentScheme : standardScheme 
+    });
+
+    try {
+      if (isAndroid) {
+        // در اندروید از Intent استفاده می‌کنیم
+        window.location.href = intentScheme;
+      } else {
+        // در iOS یا سایر موارد از Scheme معمولی استفاده می‌کنیم
+        window.location.href = standardScheme;
+      }
+    } catch (e) {
+      addLog("error", "Redirect failed", { message: e.message });
     }
   };
 
-  // رندر پنل دیباگ و دکمه‌ها
   return (
     <div className="mt-6">
-      {/* اگر localhost است، بنر هشدار */}
       {isLocalhostNotice && (
-        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-800">
-          این صفحه روی localhost اجرا شده — از یک آدرس IP محلی (مثلاً http://10.162.57.121:3001) استفاده کنید تا گوشی بتواند به سرور متصل شود.
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-800 text-xs">
+          ⚠️ در حال استفاده از localhost هستید.
         </div>
       )}
 
       <div className="mt-4 flex flex-col gap-3">
         <button
           onClick={handleOpenApp}
-          className="w-full rounded-lg bg-blue-600 px-4 py-3 text-white font-bold"
+          className="w-full rounded-2xl bg-blue-600 px-4 py-4 text-white font-black text-lg shadow-lg shadow-blue-200 active:scale-95 transition-transform"
         >
           بازگشت به اپلیکیشن درخواستیاب
         </button>
 
-        <div className="rounded-lg border p-3 bg-gray-50 text-sm">
-          <div className="flex justify-between">
-            <div>Heartbeat:</div>
-            <div className="font-mono">{heartbeat}</div>
-          </div>
-
-          <div className="flex justify-between mt-2">
-            <div>وضعیت اجرای جاوااسکریپت:</div>
-            <div className={browserReady ? "text-emerald-600" : "text-rose-600"}>
-              {browserReady ? "✓ فعال و Hydrate شده" : "✕ فقط SSR (JS غیرفعال)"}
-            </div>
-          </div>
-
-          <div className="flex justify-between mt-2">
-            <div>React Mounted:</div>
-            <div className="font-mono">{mounted ? "true" : "false"}</div>
-          </div>
-
-          <div className="flex justify-between mt-2">
-            <div>پروتکل:</div>
-            <div className="font-mono">{browserProtocol || "در حال بررسی..."}</div>
-          </div>
-
-          <div className="flex justify-between mt-2">
-            <div>تعداد Script تگ‌ها:</div>
-            <div className="font-mono">{scriptCount}</div>
-          </div>
-
-          <div className="mt-2">
-            <div className="text-xs text-gray-600">User Agent:</div>
-            <div className="font-mono text-xs break-all">{browserUserAgent || "در حال رندر اولیه سمت سرور..."}</div>
-          </div>
-
-          <div className="mt-2">
-            <div className="text-xs text-gray-600">آدرس فعلی (window.location):</div>
-            <div className="font-mono text-xs break-all">{browserHref || "در حال رندر اولیه سمت سرور..."}</div>
-          </div>
-
-          {earlyErrors.length > 0 && (
-            <div className="mt-3 rounded-md bg-red-50 p-2 text-red-700">
-              <div className="font-bold">خطاهای اولیه:</div>
-              <pre className="text-xs font-mono whitespace-pre-wrap overflow-x-auto">{JSON.stringify(earlyErrors, null, 2)}</pre>
-            </div>
-          )}
-
-          {logs.length > 0 && (
-            <div className="mt-3">
-              <div className="font-bold">لاگ‌های کلاینت:</div>
-              <div className="max-h-40 overflow-y-auto text-xs font-mono">
-                {logs.map((l, i) => (
-                  <div key={i} className="border-b py-1">
-                    <div className="flex justify-between">
-                      <div className={l.type === "error" ? "text-red-600" : l.type === "warn" ? "text-amber-600" : "text-green-600"}>
-                        [{l.type}] {l.title}
-                      </div>
-                      <div className="text-gray-500">{l.time}</div>
-                    </div>
-                    {l.details && <div className="text-xs text-gray-600 mt-1">{JSON.stringify(l.details)}</div>}
+        {/* پنل دیباگ */}
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[10px] text-slate-500">
+          <div className="font-bold mb-2 text-slate-700">DEBUG PANEL</div>
+          <div className="flex justify-between"><span>Heartbeat:</span><span className="font-mono">{heartbeat}</span></div>
+          <div className="flex justify-between"><span>JS Ready:</span><span className={browserReady ? "text-emerald-600" : "text-rose-600"}>{browserReady ? "YES" : "NO"}</span></div>
+          <div className="flex justify-between"><span>Scripts:</span><span className="font-mono">{scriptCount}</span></div>
+          <div className="mt-2 text-[9px] break-all"><span>UA:</span><br/>{browserUserAgent}</div>
+          
+          <div className="mt-4">
+            <div className="font-bold mb-1 text-slate-700">LOGS:</div>
+            <div className="max-h-32 overflow-y-auto">
+              {logs.map((l, i) => (
+                <div key={i} className="border-b border-slate-200 py-1">
+                  <div className="flex justify-between">
+                    <span className={l.type === "error" ? "text-red-500" : "text-blue-500"}>[{l.type}]</span>
+                    <span>{l.time}</span>
                   </div>
-                ))}
-              </div>
+                  <div className="opacity-70">{l.title}</div>
+                  {l.details && <div className="text-[8px] break-all opacity-50">{JSON.stringify(l.details)}</div>}
+                </div>
+              ))}
             </div>
-          )}
-
-          {loadedScripts.length > 0 && (
-            <details className="mt-2">
-              <summary className="cursor-pointer text-xs">نمایش لیست اسکریپت‌های لود شده ({loadedScripts.length})</summary>
-              <div className="mt-2 text-xs font-mono max-h-32 overflow-y-auto">
-                {loadedScripts.map((s, idx) => (
-                  <div key={idx} className="truncate">
-                    {idx + 1}. {s.src}
-                  </div>
-                ))}
-              </div>
-            </details>
-          )}
+          </div>
         </div>
       </div>
     </div>
