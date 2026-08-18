@@ -7,6 +7,8 @@ import {
   XCircle,
 } from "lucide-react";
 
+import PaymentResultClient from "../payment-result-client";
+
 const PAYMENT_ERROR_MESSAGES = {
   PAYMENT_NOT_COMPLETED: {
     title: "پرداخت تکمیل نشد",
@@ -76,6 +78,7 @@ const PAYMENT_ERROR_MESSAGES = {
 };
 
 function getPaymentResult(status, errorCode) {
+  // منطق اصلی بدون تغییر حفظ شده است
   if (status === "success") {
     return {
       isSuccess: true,
@@ -109,6 +112,7 @@ function getPaymentResult(status, errorCode) {
 }
 
 export default async function PaymentResultPage({ searchParams }) {
+  // در Next.js جدید حتماً باید searchParams را await کنیم
   const params = await searchParams;
 
   const status = params?.status || "";
@@ -138,7 +142,9 @@ export default async function PaymentResultPage({ searchParams }) {
           {result.badge}
         </div>
 
-        <h1 className="text-2xl font-black text-slate-900">{result.title}</h1>
+        <h1 className="text-2xl font-black text-slate-900">
+          {result.title}
+        </h1>
 
         <p className="mx-auto mt-4 max-w-md text-sm leading-8 text-slate-600">
           {result.description}
@@ -146,7 +152,9 @@ export default async function PaymentResultPage({ searchParams }) {
 
         {transactionId ? (
           <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-            <span className="font-bold text-slate-800">شناسه پیگیری: </span>
+            <span className="font-bold text-slate-800">
+              شناسه پیگیری:{" "}
+            </span>
             <span dir="ltr">{transactionId}</span>
           </div>
         ) : null}
@@ -175,6 +183,9 @@ export default async function PaymentResultPage({ searchParams }) {
             صفحه اصلی
           </Link>
         </div>
+
+        {/* انتقال خودکار نتیجه به اپلیکیشن */}
+        <PaymentResultClient />
       </section>
     </main>
   );
