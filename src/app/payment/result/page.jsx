@@ -78,7 +78,6 @@ const PAYMENT_ERROR_MESSAGES = {
 };
 
 function getPaymentResult(status, errorCode) {
-  // منطق اصلی بدون تغییر حفظ شده است
   if (status === "success") {
     return {
       isSuccess: true,
@@ -112,9 +111,8 @@ function getPaymentResult(status, errorCode) {
 }
 
 export default async function PaymentResultPage({ searchParams }) {
-  // در Next.js جدید حتماً باید searchParams را await کنیم
+  // مطابق Next.js جدید: searchParams ممکن است یک Promise باشد
   const params = await searchParams;
-
   const status = params?.status || "";
   const transactionId = params?.transactionId || "";
   const errorCode = params?.errorCode || "";
@@ -184,8 +182,8 @@ export default async function PaymentResultPage({ searchParams }) {
           </Link>
         </div>
 
-        {/* انتقال خودکار نتیجه به اپلیکیشن */}
-        <PaymentResultClient />
+        {/* کامپوننت کلاینت: اجرای JS و انتقال نتیجه به اپلیکیشن */}
+        <PaymentResultClient serverParams={{ status, transactionId, errorCode }} />
       </section>
     </main>
   );
