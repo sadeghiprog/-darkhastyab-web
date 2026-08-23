@@ -118,8 +118,8 @@ export default function RequestHeader({
             disabled={checkingAccess}
             className="inline-flex justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 px-5 py-3 text-sm font-black text-white disabled:opacity-70"
           >
-            <PhoneCall size={17} />
-            {checkingAccess ? "در حال بررسی..." : "تامین می‌کنم"}
+            <PhoneCall size={20} />
+            {checkingAccess ? "در حال بررسی..." : "تماس و تامین"}
           </button>
         )}
       </div>

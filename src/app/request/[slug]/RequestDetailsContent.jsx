@@ -11,6 +11,8 @@ import PublishStatusBox from "./components/PublishStatusBox";
 import AdminPublishActions from "./components/AdminPublishActions";
 import OffersSection from "./components/OffersSection";
 import LatestRequestsSidebar from "./components/LatestRequestsSidebar";
+import ContactInfoModal from "./components/ContactInfoModal";
+
 
 export default function RequestDetailsContent({ slug, initialRequest }) {
   const {
@@ -44,6 +46,8 @@ export default function RequestDetailsContent({ slug, initialRequest }) {
     handleOpenSupplyModal,
     handleRequestContactClick,
     requestContactLoading,
+    contactModal,
+    setContactModal
   } = useRequestDetails(slug, initialRequest);
 
   return (
@@ -104,6 +108,14 @@ export default function RequestDetailsContent({ slug, initialRequest }) {
             loadingLatest={loadingLatest}
             latestRequests={latestRequests}
           />
+
+          {/* <ContactInfoModal
+            open={Boolean(contactModal)}
+            contactName={contactModal?.name}
+            contactPhone={contactModal?.phone}
+            onClose={() => setContactModal(null)}
+          /> */}
+
         </div>
       </div>
 
@@ -168,6 +180,13 @@ export default function RequestDetailsContent({ slug, initialRequest }) {
         onClose={() => setShowOfferModal(false)}
         onSubmit={submitSupply}
       />
+
+      <ContactInfoModal
+            open={Boolean(contactModal)}
+            contactName={contactModal?.name}
+            contactPhone={contactModal?.phone}
+            onClose={() => setContactModal(null)}
+          />
 
       <Toast message={toast} onClose={() => setToast(null)} />
     </div>

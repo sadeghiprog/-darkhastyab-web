@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { API_BASE, supplyMessages } from "../utils/constants";
 import { authSession } from "../../../../lib/auth-session";
 
+
 export default function useRequestDetails(slug, initialRequest = null) {
   const router = useRouter();
 
@@ -12,6 +13,7 @@ export default function useRequestDetails(slug, initialRequest = null) {
 const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
 
 
+  const [contactModal, setContactModal] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [latestRequests, setLatestRequests] = useState([]);
@@ -48,7 +50,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
 
   const showToast = (msg) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 5000);
+    setTimeout(() => setToast(null), 50000);
   };
 
   const isLoggedIn = !!currentUser?.id;
@@ -89,6 +91,8 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
         });
         return;
       }
+
+      console.log("***********",data.hasAccess);
 
       setActionModal({
         open: true,
@@ -164,10 +168,16 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       const name = data?.contactName || request?.userName || "—";
       const phone = data?.contactPhone || "—";
 
-      showToast({
-        title: "اطلاعات تماس",
-        text: `نام خریدار: ${name}\nشماره تماس: ${phone}`,
+      setContactModal({
+        name,
+        phone,
       });
+
+
+      // showToast({
+      //   title: "اطلاعات تماس",
+      //   text: `نام خریدار: ${name}\nشماره تماس: ${phone}`,
+      // });
     } catch {
       showToast({
         title: "خطا",
@@ -481,5 +491,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
     handleOpenSupplyModal,
     handleRequestContactClick,
     requestContactLoading,
+    contactModal,
+    setContactModal
   };
 }
