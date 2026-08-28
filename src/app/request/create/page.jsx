@@ -1,8 +1,9 @@
 // app/purchase-requests/create/page.jsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import Input from "../../../components/ui/Input";
 import Button from "../../../components/ui/Button";
 import Alert from "../../../components/ui/Alert";
@@ -13,9 +14,12 @@ import { ROUTES } from "../../../constants/routes";
 import { useAuth } from "../../../context/AuthContext";
 import { apiFetch } from "../../../lib/api";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://darkhastyab.com/api";
+
 export default function CreatePurchaseRequestPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const fileInputRef = useRef(null);
 
   // --- مدیریت مراحل فرم (۱ تا ۴) ---
   const [step, setStep] = useState(1);
@@ -24,35 +28,40 @@ export default function CreatePurchaseRequestPage() {
   const canCreateForCustomer = ["ADMIN", "PARTNER"].includes(user?.status);
 
   // --- States برای داده‌های اولیه از سرور ---
-  const [categories, setCategories] = useState([]); // دسته‌بندی‌های اصلی
-  const [subCategories, setSubCategories] = useState([]); // زیردسته‌های دسته‌بندی انتخاب‌شده
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
   const [units, setUnits] = useState([]);
   const [provinces, setProvinces] = useState([]);
   const [cities, setCities] = useState([]);
 
   // --- States برای مقادیر فرم ---
   const [formData, setFormData] = useState({
-    customerName: "", // مخصوص ادمین/پارتنر (اختیاری)
-    customerPhone: "", // مخصوص ادمین/پارتنر (اختیاری)
+    customerName: "",
+    customerPhone: "",
     title: "",
-    categoryId: "", // شناسه دسته اصلی
-    subCategoryId: "", // شناسه زیردسته
+    categoryId: "",
+    subCategoryId: "",
     unitId: "",
     quantity: "",
-    budgetAmount: "0",
+    budgetAmount: "",
     expiresInDays: "100000", // پیش‌فرض بدون انقضا
     provinceId: "",
     cityId: "",
     description: "",
   });
 
-  // --- States برای مدیریت وضعیت صفحه ---
+  // --- مدیریت آپلود تصاویر ---
+  // ساختار آیتم‌ها: { url, thumbnailUrl, sortOrder }
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // --- States وضعیت صفحه ---
   const [loading, setLoading] = useState(false);
   const [initLoading, setInitLoading] = useState(true);
   const [error, setError] = useState("");
-  const [successMessage, setSuccessMessage] = useState(""); // پیام موفقیت بعد از ثبت
+  const [successMessage, setSuccessMessage] = useState("");
 
-  // ۱. دریافت داده‌های اولیه هنگام لود صفحه
+  // ۱. دریافت اطلاعات اولیه (دسته‌بندی‌ها، واحدها، استان‌ها)
   useEffect(() => {
     async function fetchInitialData() {
       try {
@@ -75,7 +84,7 @@ export default function CreatePurchaseRequestPage() {
     fetchInitialData();
   }, []);
 
-  // ۲. هر زمان استان تغییر کرد، لیست شهرهای آن را بگیر
+  // ۲. دریافت لیست شهرها با انتخاب استان
   useEffect(() => {
     async function fetchCities() {
       if (!formData.provinceId) {
@@ -92,11 +101,11 @@ export default function CreatePurchaseRequestPage() {
     fetchCities();
   }, [formData.provinceId]);
 
-  // ۳. مدیریت تغییر دسته اصلی و به‌روزرسانی زیردسته‌ها
+  // ۳. تغییر دسته اصلی و تنظیم زیردسته‌ها
   const handleCategoryChange = (e) => {
     const selectedCatId = e.target.value;
     const selectedCategory = categories.find(
-      (cat) => cat.id === parseInt(selectedCatId)
+      (cat) => cat.id === parseInt(selectedCatId, 10)
     );
 
     setFormData((prev) => ({
@@ -112,14 +121,90 @@ export default function CreatePurchaseRequestPage() {
     }
   };
 
-  // ۴. هندلر تغییرات بقیه ورودی‌ها
+  // ۴. هندلر ورودی‌ها
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (error) setError("");
   };
 
-  // ۵. اعتبارسنجی مراحل قبل از رفتن به مرحله بعد
+  // ۵. منطق آپلود مستقل تصاویر
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    if (uploadedImages.length + files.length > 10) {
+      setError("حداکثر می‌توانید 10 تصویر برای درخواست بارگذاری کنید.");
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setError("");
+
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) {
+          setError("لطفاً فقط فایل تصویر انتخاب کنید.");
+          continue;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          setError("حجم هر تصویر باید کمتر از ۵ مگابایت باشد.");
+          continue;
+        }
+
+        const data = new FormData();
+        data.append("image", file);
+
+        const res = await apiFetch("/upload/purchase-request", {
+          method: "POST",
+          body: data,
+        });
+
+        if (res && res.url) {
+          setUploadedImages((prev) => [
+            ...prev,
+            {
+              url: res.url,
+              thumbnailUrl: res.thumbnailUrl || res.url,
+              sortOrder: prev.length,
+            },
+          ]);
+        }
+      }
+    } catch (err) {
+      setError(err.message || "خطا در بارگذاری تصویر روی سرور");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // ۶. حذف تصویر از لیست و از دیسک سرور
+  const handleRemoveImage = async (indexToRemove) => {
+    const targetImage = uploadedImages[indexToRemove];
+    if (!targetImage) return;
+
+    try {
+      // ارسال درخواست حذف به بک‌اند
+      await apiFetch("/upload/remove", {
+        method: "POST",
+        body: JSON.stringify({ url: targetImage.url }),
+      }).catch((err) => console.warn("حذف فیزیکی فایل با خطا مواجه شد:", err));
+
+      setUploadedImages((prev) =>
+        prev
+          .filter((_, idx) => idx !== indexToRemove)
+          .map((img, idx) => ({ ...img, sortOrder: idx }))
+      );
+    } catch (err) {
+      console.error("خطا در حذف تصویر", err);
+    }
+  };
+
+  // ۷. اعتبارسنجی فیلدهای هر مرحله
   const validateStep = (currentStep) => {
     setError("");
 
@@ -211,14 +296,13 @@ export default function CreatePurchaseRequestPage() {
     setStep((prev) => prev - 1);
   };
 
-  // جلوگیری از ارسال فرم با فشردن دکمه Enter در فیلدها
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
       e.preventDefault();
     }
   };
 
-  // ۶. ارسال نهایی فرم در مرحله چهارم
+  // ۸. ثبت نهایی اطلاعات
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -237,20 +321,23 @@ export default function CreatePurchaseRequestPage() {
       setLoading(true);
 
       const payload = {
-        title: formData.title,
-        categoryId: parseInt(formData.subCategoryId),
-        unitId: parseInt(formData.unitId),
+        title: formData.title.trim(),
+        categoryId: parseInt(formData.subCategoryId, 10),
+        unitId: parseInt(formData.unitId, 10),
         quantity: parseFloat(formData.quantity),
-        budgetAmount: formData.budgetAmount
-          ? parseFloat(formData.budgetAmount)
-          : null,
+        budgetAmount: formData.budgetAmount ? parseFloat(formData.budgetAmount) : 0,
         expiresInDays:
-          formData.expiresInDays === "0"
-            ? null
-            : parseInt(formData.expiresInDays),
-        provinceId: parseInt(formData.provinceId),
-        cityId: parseInt(formData.cityId),
-        description: formData.description,
+          formData.expiresInDays === "100000"
+            ? 100000
+            : parseInt(formData.expiresInDays, 10),
+        provinceId: parseInt(formData.provinceId, 10),
+        cityId: parseInt(formData.cityId, 10),
+        description: formData.description.trim(),
+        images: uploadedImages.map((img, index) => ({
+          url: img.url,
+          thumbnailUrl: img.thumbnailUrl || img.url,
+          sortOrder: index,
+        })),
       };
 
       const hasCustomerInfo =
@@ -282,12 +369,13 @@ export default function CreatePurchaseRequestPage() {
     }
   };
 
-  if (initLoading)
+  if (initLoading) {
     return (
-      <div className="text-center p-10 text-gray-500">
+      <div className="flex justify-center items-center min-h-[300px] text-gray-500 text-sm">
         در حال بارگذاری اطلاعات اولیه...
       </div>
     );
+  }
 
   const stepsTitle = ["مشخصات کالا", "دسته‌بندی کالا", "محل تحویل", "جزئیات نهایی"];
 
@@ -301,6 +389,7 @@ export default function CreatePurchaseRequestPage() {
               : "ثبت درخواست خرید جدید"}
           </h1>
 
+          {/* نوار مراحل */}
           <div className="flex items-center justify-between w-full relative">
             <div className="absolute top-5 left-0 right-0 h-0.5 bg-gray-200 -z-10" />
             <div
@@ -348,6 +437,7 @@ export default function CreatePurchaseRequestPage() {
         </div>
 
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-6">
+          {/* مرحله ۱: مشخصات اولیه کالا */}
           {step === 1 && (
             <div className="space-y-4 animate-fadeIn">
               {canCreateForCustomer && (
@@ -408,6 +498,7 @@ export default function CreatePurchaseRequestPage() {
                   label="مقدار مورد نیاز *"
                   name="quantity"
                   type="number"
+                  step="any"
                   value={formData.quantity}
                   onChange={handleChange}
                   placeholder="مثلاً: 50"
@@ -417,6 +508,7 @@ export default function CreatePurchaseRequestPage() {
             </div>
           )}
 
+          {/* مرحله ۲: دسته‌بندی */}
           {step === 2 && (
             <div className="space-y-4 animate-fadeIn">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -468,6 +560,7 @@ export default function CreatePurchaseRequestPage() {
             </div>
           )}
 
+          {/* مرحله ۳: محل تحویل */}
           {step === 3 && (
             <div className="space-y-4 animate-fadeIn">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -515,8 +608,9 @@ export default function CreatePurchaseRequestPage() {
             </div>
           )}
 
+          {/* مرحله ۴: جزئیات نهایی و تصاویر */}
           {step === 4 && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-5 animate-fadeIn">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label="بودجه تقریبی (تومان) - اختیاری"
@@ -549,7 +643,7 @@ export default function CreatePurchaseRequestPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  توضیحات تکمیلی
+                  توضیحات تکمیلی *
                 </label>
                 <textarea
                   name="description"
@@ -557,8 +651,75 @@ export default function CreatePurchaseRequestPage() {
                   onChange={handleChange}
                   rows="4"
                   className="w-full p-2.5 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
-                  placeholder="جزئیات بیشتر، برند مورد نظر یا شرایط خاص را اینجا بنویسید..."
+                  placeholder="جزئیات بیشتر، مشخصات فنی، برند مورد نظر یا شرایط پرداخت را بنویسید..."
+                  required
                 ></textarea>
+              </div>
+
+              {/* بخش آپلود تصاویر */}
+              <div className="space-y-3 pt-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  تصاویر کالا یا پیش‌فاکتور (اختیاری - حداکثر 10 تصویر)
+                </label>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  {uploadedImages.map((img, index) => {
+                    const displaySrc = img.url.startsWith("http")
+                      ? img.url
+                      : `${API_BASE_URL.replace("/api", "")}${img.url}`;
+
+                    return (
+                      <div
+                        key={img.url || index}
+                        className="relative w-20 h-20 rounded-lg border border-gray-200 overflow-hidden group bg-gray-50"
+                      >
+                        <img
+                          src={displaySrc}
+                          alt={`تصویر شماره ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-90 hover:opacity-100 transition-opacity"
+                          title="حذف تصویر"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {uploadedImages.length < 10 && (
+                    <label className="w-20 h-20 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50/50 transition-colors">
+                      <svg
+                        className="w-6 h-6 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      <span className="text-[10px] text-gray-500 mt-1">
+                        {uploadingImage ? "در حال آپلود..." : "افزودن عکس"}
+                      </span>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={uploadingImage}
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -571,6 +732,7 @@ export default function CreatePurchaseRequestPage() {
 
           {error && <Alert message={error} />}
 
+          {/* دکمه‌های ناوبری مراحل */}
           <div className="flex justify-between items-center gap-4 pt-4 border-t border-gray-100">
             {step > 1 ? (
               <Button
@@ -578,7 +740,7 @@ export default function CreatePurchaseRequestPage() {
                 variant="outline"
                 onClick={handleBack}
                 className="w-1/3 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
-                disabled={loading}
+                disabled={loading || uploadingImage}
               >
                 بازگشت
               </Button>
@@ -598,6 +760,7 @@ export default function CreatePurchaseRequestPage() {
               <Button
                 type="submit"
                 loading={loading}
+                disabled={uploadingImage}
                 className="w-2/3 py-2.5 text-white bg-green-600 hover:bg-green-700 rounded-lg"
               >
                 ثبت نهایی درخواست

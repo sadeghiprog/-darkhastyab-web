@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import Script from "next/script";
 import SupplierHeader from "../../../components/common/SupplierHeader";
-import SupplierOfferCard from "../../../components/common/SupplierOfferCard";
+import SupplierRequestsList from "./SupplierRequestsList";
 
 // تنظیم زمان کش کردن صفحه به مدت ۵ دقیقه
 export const revalidate = 300;
@@ -46,16 +46,16 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const companyName =  supplier.name || "صنعتی";
+  const companyName = supplier.name || "صنعتی";
   const activity = supplier.profile?.activityField || "صنعتی";
   const resumeText = supplier.profile?.resume || supplier.resume || "";
-  
-  // ساخت عنوان سئو مطابق خواسته شما: تامین‌کننده [حوزه فعالیت] [نام] | درخواستیاب
+
+  // ساخت عنوان سئو: تامین‌کننده [حوزه فعالیت] [نام] | درخواستیاب
   const seoTitle = `تامین‌کننده ${activity} ${companyName} | درخواست یاب`;
 
   const cleanDescription = resumeText
     ? resumeText.slice(0, 155).replace(/\r?\n|\r/g, " ") + "..."
-    : `مشخصات، اطلاعات تماس مستقیم، حوزه فعالیت ${activity}، رزومه کاری و لیست پیشنهادهای فعال تامین‌کننده ${companyName} در سامانه درخواست یاب.`;
+    : `مشخصات، اطلاعات تماس مستقیم، حوزه فعالیت ${activity}، رزومه کاری و لیست درخواست‌های تامین‌کننده ${companyName} در سامانه درخواست یاب.`;
 
   return {
     title: seoTitle,
@@ -90,19 +90,22 @@ export default async function SupplierPage({ params }) {
     "@type": "Organization",
     "@id": `https://darkhastyab.com/supplier/${id}#organization`,
     "name": companyName,
-    "description": supplier.profile?.resume || supplier.resume || `تأمین‌کننده حوزه ${activity || "صنعتی"} در درخواست یاب`,
+    "description":
+      supplier.profile?.resume ||
+      supplier.resume ||
+      `تأمین‌کننده حوزه ${activity || "صنعتی"} در درخواست یاب`,
     "url": `https://darkhastyab.com/supplier/${id}`,
     "logo": supplier.profile?.avatarUrl
       ? `${process.env.NEXT_PUBLIC_AVATAR_URL}${supplier.profile.avatarUrl}`
       : undefined,
-    ...(activity && { "knowsAbout": activity }),
+    ...(activity && { knowsAbout: activity }),
     ...(supplier.rating?.count > 0 && {
-      "aggregateRating": {
+      aggregateRating: {
         "@type": "AggregateRating",
-        "ratingValue": supplier.rating.avg,
-        "reviewCount": supplier.rating.count,
-        "bestRating": "5",
-        "worstRating": "1",
+        ratingValue: supplier.rating.avg,
+        reviewCount: supplier.rating.count,
+        bestRating: "5",
+        worstRating: "1",
       },
     }),
   };
@@ -117,12 +120,8 @@ export default async function SupplierPage({ params }) {
       />
 
       <div className="max-w-5xl mx-auto px-4 py-10">
-        
         {/* هدر تامین کننده */}
         <SupplierHeader supplier={supplier} />
-
-        {/* نمایش حوزه فعالیت دقیقا زیر هدر اصلی (یا به صورت یک بخش ظریف مجزا) */}
-        
 
         {/* رزومه */}
         {(supplier.profile?.resume || supplier.resume) && (
@@ -134,28 +133,8 @@ export default async function SupplierPage({ params }) {
           </div>
         )}
 
-        {/* آخرین پیشنهادها */}
-        <div className="mt-8">
-          <h2 className="font-bold text-lg mb-4 text-slate-800">
-            آخرین پیشنهادها
-          </h2>
-
-          <div className="space-y-3">
-            {supplier.offers?.length > 0 ? (
-              supplier.offers.map((offer) => (
-                <SupplierOfferCard
-                  key={offer.id}
-                  offer={offer}
-                  supplier={supplier}
-                />
-              ))
-            ) : (
-              <div className="text-center py-8 text-slate-500 bg-white rounded-xl border border-slate-100">
-                هیچ پیشنهادی توسط این تامین‌کننده ثبت نشده است.
-              </div>
-            )}
-          </div>
-        </div>
+        {/* لیست درخواست‌های تامین‌کننده با صفحه‌بندی */}
+        <SupplierRequestsList supplierId={id} />
       </div>
     </div>
   );

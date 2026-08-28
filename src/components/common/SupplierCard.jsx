@@ -14,7 +14,7 @@ export default function SupplierCard({ supplier }) {
     : `${baseAvatar}/uploads/avatars/avatar.webp`;
 
   const contactCount = supplier.contactCount || 0;
-  const supplyOfferCount = supplier._count?.supplyOffers || 0;
+  const supplyOfferCount = supplier._count?.purchaseRequests || 0;
 
   // فیلتر کردن اسلاگ برای جلوگیری از خطا
   const supplierId = supplier.id;
@@ -35,7 +35,8 @@ export default function SupplierCard({ supplier }) {
             {supplier.name || "نامعلوم"}
           </h3>
           <p className="text-xs text-gray-500 leading-relaxed max-w-xs mx-auto">
-            {"تامین کننده "+supplier.profile.activityField || "شرکت نامعلوم"}
+            {"تامین کننده " + (supplier.profile?.activityField || "شرکت نامعلوم")}
+
           </p>
         </div>
 
@@ -65,7 +66,7 @@ export default function SupplierCard({ supplier }) {
             <span className="block font-bold text-base text-blue-600">
               {supplyOfferCount}
             </span>
-            <span className="text-xs text-gray-500">پیشنهاد</span>
+            <span className="text-xs text-gray-500">درخواست</span>
           </div>
           <div className="text-center">
             <span className="block font-bold text-base text-green-600">

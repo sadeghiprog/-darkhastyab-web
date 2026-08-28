@@ -1,24 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_BASE, supplyMessages } from "../utils/constants";
 import { authSession } from "../../../../lib/auth-session";
 
-
 export default function useRequestDetails(slug, initialRequest = null) {
   const router = useRouter();
 
- const [request, setRequest] = useState(() => initialRequest ?? null);
-const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
-
+  const [request, setRequest] = useState(() => initialRequest ?? null);
+  const [loadingRequest, setLoadingRequest] = useState(
+    () => !initialRequest
+  );
 
   const [contactModal, setContactModal] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [latestRequests, setLatestRequests] = useState([]);
   const [loadingLatest, setLoadingLatest] = useState(true);
-  const [adminNote, setAdminNote] = useState(() => initialRequest?.adminNote || "");
+  const [adminNote, setAdminNote] = useState(
+    () => initialRequest?.adminNote || ""
+  );
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [deletingRequest, setDeletingRequest] = useState(false);
 
@@ -29,6 +31,16 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
   const [toast, setToast] = useState(null);
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(false);
+
+  // وضعیت دسترسی کاربر به اطلاعات تماس این درخواست
+  const [requestAccess, setRequestAccess] = useState({
+    hasAccess: false,
+    hasCredit: false,
+    isSupplier: false,
+  });
+
+  // لودینگ دریافت وضعیت دسترسی از سرور
+  const [loadingRequestAccess, setLoadingRequestAccess] = useState(false);
 
   const [actionModal, setActionModal] = useState({
     open: false,
@@ -54,30 +66,42 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
   };
 
   const isLoggedIn = !!currentUser?.id;
+
   const isOwner =
     isLoggedIn &&
     request?.userId != null &&
     String(currentUser.id) === String(request.userId);
+
   const isAdmin = isLoggedIn && currentUser?.status === "ADMIN";
 
-  const handleSupplyClick = async () => {
-    if (!isLoggedIn) {
-      authSession.setRedirectAfterLogin(
-        window.location.pathname + window.location.search
-      );
-      router.push("/auth/login");
-      return;
+  /**
+   * دریافت وضعیت دسترسی کاربر به درخواست از سرور.
+   * این تابع هم در ورود اولیه به صفحه و هم موقع کلیک روی Supply استفاده می‌شود.
+   */
+  const checkRequestAccess = useCallback(async () => {
+    const emptyAccess = {
+      hasAccess: false,
+      hasCredit: false,
+      isSupplier: false,
+    };
+
+    // برای کاربر لاگین‌نشده، استعلام Access لازم نیست.
+    if (!isLoggedIn || !slug) {
+      setRequestAccess(emptyAccess);
+      return emptyAccess;
     }
 
     try {
-      setCheckingAccess(true);
+      setLoadingRequestAccess(true);
 
       const res = await fetch(`${API_BASE}/supply-offer/check/${slug}`, {
         method: "GET",
         credentials: "include",
+        cache: "no-store",
       });
 
       let data = {};
+
       try {
         data = await res.json();
       } catch {
@@ -85,20 +109,50 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       }
 
       if (!res.ok) {
-        showToast({
-          title: "خطا",
-          text: data.message || "خطا در بررسی دسترسی",
-        });
-        return;
+        setRequestAccess(emptyAccess);
+
+        return emptyAccess;
       }
 
-      console.log("***********",data.hasAccess);
+      const accessData = {
+        hasAccess: Boolean(data?.hasAccess),
+        hasCredit: Boolean(data?.hasCredit),
+        isSupplier: Boolean(data?.isSupplier),
+      };
+
+      setRequestAccess(accessData);
+
+      return accessData;
+    } catch {
+      setRequestAccess(emptyAccess);
+
+      return emptyAccess;
+    } finally {
+      setLoadingRequestAccess(false);
+    }
+  }, [isLoggedIn, slug]);
+
+  const handleSupplyClick = async () => {
+    if (!isLoggedIn) {
+      authSession.setRedirectAfterLogin(
+        window.location.pathname + window.location.search
+      );
+
+      router.push("/auth/login");
+      return;
+    }
+
+    try {
+      setCheckingAccess(true);
+
+      // استفاده از تابع مشترک تا داده از سرور گرفته شود
+      const accessData = await checkRequestAccess();
 
       setActionModal({
         open: true,
-        hasAccess: !!data.hasAccess,
-        hasCredit: !!data.hasCredit,
-        isSupplier: !!data.isSupplier,
+        hasAccess: accessData.hasAccess,
+        hasCredit: accessData.hasCredit,
+        isSupplier: accessData.isSupplier,
       });
     } catch {
       showToast({
@@ -130,11 +184,11 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       authSession.setRedirectAfterLogin(
         window.location.pathname + window.location.search
       );
+
       router.push("/auth/login");
       return;
     }
 
-    
     try {
       setRequestContactLoading(true);
 
@@ -144,6 +198,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       });
 
       let data = {};
+
       try {
         data = await res.json();
       } catch {
@@ -160,8 +215,15 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
           title: "خطا",
           text: data.message || "خطا در دریافت اطلاعات تماس",
         });
+
         return;
       }
+
+      // چون تماس با موفقیت انجام شده، کاربر قطعاً اکنون Access دارد.
+      setRequestAccess((previousAccess) => ({
+        ...previousAccess,
+        hasAccess: true,
+      }));
 
       closeActionModal();
 
@@ -172,7 +234,6 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
         name,
         phone,
       });
-
 
       // showToast({
       //   title: "اطلاعات تماس",
@@ -205,15 +266,22 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
         } else if (data.message === "not_supplier") {
           showToast(supplyMessages.notSupplier);
         } else {
-          showToast({ title: "خطا", text: data.message || "ارسال ناموفق بود" });
+          showToast({
+            title: "خطا",
+            text: data.message || "ارسال ناموفق بود",
+          });
         }
+
         return;
       }
 
       setShowOfferModal(false);
       showToast(supplyMessages.success);
     } catch {
-      showToast({ title: "خطا", text: "ارتباط با سرور برقرار نشد" });
+      showToast({
+        title: "خطا",
+        text: "ارتباط با سرور برقرار نشد",
+      });
     }
   };
 
@@ -222,6 +290,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       authSession.setRedirectAfterLogin(
         window.location.pathname + window.location.search
       );
+
       router.push("/auth/login");
       return;
     }
@@ -229,9 +298,12 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
     try {
       setContactLoadingId(offerId);
 
-      const accessRes = await fetch(`${API_BASE}/contact/${offerId}/check-access`, {
-        credentials: "include",
-      });
+      const accessRes = await fetch(
+        `${API_BASE}/contact/${offerId}/check-access`,
+        {
+          credentials: "include",
+        }
+      );
 
       const accessData = await accessRes.json();
 
@@ -240,6 +312,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
           title: "خطا",
           text: "خطا در بررسی دسترسی",
         });
+
         return;
       }
 
@@ -257,6 +330,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       });
 
       let data = {};
+
       try {
         data = await res.json();
       } catch {
@@ -273,6 +347,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
           title: "خطا",
           text: data.message || "خطا در دریافت اطلاعات تماس",
         });
+
         return;
       }
 
@@ -296,6 +371,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
   useEffect(() => {
     const fetchCurrentUser = async () => {
       setLoadingUser(true);
+
       try {
         const res = await fetch(`${API_BASE}/auth/me`, {
           cache: "no-store",
@@ -318,6 +394,28 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
     fetchCurrentUser();
   }, []);
 
+  /**
+   * بلافاصله پس از تعیین وضعیت لاگین و داشتن slug،
+   * Access درخواست از سرور خوانده می‌شود.
+   *
+   * بنابراین لازم نیست کاربر ابتدا روی «ثبت پیشنهاد» بزند.
+   */
+  useEffect(() => {
+    if (loadingUser) return;
+
+    if (!isLoggedIn) {
+      setRequestAccess({
+        hasAccess: false,
+        hasCredit: false,
+        isSupplier: false,
+      });
+
+      return;
+    }
+
+    checkRequestAccess();
+  }, [loadingUser, isLoggedIn, checkRequestAccess]);
+
   useEffect(() => {
     if (initialRequest) {
       setRequest(initialRequest);
@@ -328,6 +426,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
 
     const fetchRequest = async () => {
       setLoadingRequest(true);
+
       try {
         const res = await fetch(`${API_BASE}/purchase-requests/${slug}`, {
           cache: "no-store",
@@ -337,6 +436,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
         if (!res.ok) throw new Error();
 
         const data = await res.json();
+
         setRequest(data?.request || null);
         setAdminNote(data?.request?.adminNote || "");
       } catch {
@@ -352,6 +452,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
   useEffect(() => {
     const fetchOffers = async () => {
       setLoadingOffers(true);
+
       try {
         const res = await fetch(`${API_BASE}/offers-list/${slug}/offers`, {
           cache: "no-store",
@@ -375,14 +476,21 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
   useEffect(() => {
     const fetchLatestRequests = async () => {
       setLoadingLatest(true);
+
       try {
-        const res = await fetch(`${API_BASE}/purchase-requests/${slug}/similar`, {
-          cache: "no-store",
-        });
+        const res = await fetch(
+          `${API_BASE}/purchase-requests/${slug}/similar`,
+          {
+            cache: "no-store",
+          }
+        );
 
         if (res.ok) {
           const data = await res.json();
-          setLatestRequests(Array.isArray(data?.requests) ? data.requests : []);
+
+          setLatestRequests(
+            Array.isArray(data?.requests) ? data.requests : []
+          );
         } else {
           setLatestRequests([]);
         }
@@ -398,6 +506,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
 
   const updatePublishStatus = async (publishStatus) => {
     if (!slug) return;
+
     setUpdatingStatus(true);
 
     try {
@@ -419,11 +528,15 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
       }
 
       setRequest(data.request);
-        const go = window.confirm("وضعیت با موفقیت تغییر کرد.\n\nمی‌خواهید به لیست درخواست‌ها برگردید؟");
 
-        if (go) {
-          window.location.href = "/profile/admin/requests?status=UNDER_REVIEW&page=1";
-        }
+      const go = window.confirm(
+        "وضعیت با موفقیت تغییر کرد.\n\nمی‌خواهید به لیست درخواست‌ها برگردید؟"
+      );
+
+      if (go) {
+        window.location.href =
+          "/profile/admin/requests?status=UNDER_REVIEW&page=1";
+      }
     } catch {
       alert("خطا در ارتباط با سرور");
     } finally {
@@ -433,6 +546,7 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
 
   const deleteRequest = async () => {
     if (!window.confirm("آیا از حذف این درخواست مطمئن هستید؟")) return;
+
     setDeletingRequest(true);
 
     try {
@@ -476,9 +590,17 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
     showOfferModal,
     setShowOfferModal,
     checkingAccess,
+
+    // وضعیت لاگین و کاربر
     isLoggedIn,
     isOwner,
     isAdmin,
+
+    // موارد جدید برای وضعیت Access
+    requestAccess,
+    loadingRequestAccess,
+    checkRequestAccess,
+
     handleSupplyClick,
     submitSupply,
     handleContactClick,
@@ -492,6 +614,6 @@ const [loadingRequest, setLoadingRequest] = useState(() => !initialRequest);
     handleRequestContactClick,
     requestContactLoading,
     contactModal,
-    setContactModal
+    setContactModal,
   };
 }

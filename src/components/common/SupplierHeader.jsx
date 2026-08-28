@@ -152,7 +152,7 @@ export default function SupplierHeader({ supplier }) {
             <div className="flex flex-wrap justify-center sm:justify-start items-center gap-x-4 gap-y-1 text-sm text-slate-500">
               <span className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
-                {supplier.offersCount || 0} پیشنهاد فعال
+                {supplier.requestsCount || 0} درخواست فعال
               </span>
               {supplier.profile?.address && (
                 <span className="flex items-center gap-1 text-slate-400">

@@ -1,22 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Input from "../../../../components/ui/Input";
 import Button from "../../../../components/ui/Button";
 import Alert from "../../../../components/ui/Alert";
 import Card from "../../../../components/ui/Card";
 import { lookupService } from "../../../../services/lookup.service";
-import { ROUTES } from "../../../../constants/routes";
 import { useAuth } from "../../../../context/AuthContext";
+import { apiFetch } from "../../../../lib/api";
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://darkhastyab.com/api";
 
 export default function EditPurchaseRequestPage() {
   const router = useRouter();
   const params = useParams();
-  const slug = params.slug;
+  const rawSlug = params?.slug;
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
 
-  const { user } = useAuth();  
+  const fileInputRef = useRef(null);
+
+  const { user } = useAuth();
   const isAdmin = user?.status === "ADMIN";
 
   // --- مدیریت مراحل فرم ---
@@ -37,11 +41,15 @@ export default function EditPurchaseRequestPage() {
     unitId: "",
     quantity: "",
     budgetAmount: "",
-    expiresInDays: "3",
+    expiresInDays: "100000",
     provinceId: "",
     cityId: "",
     description: "",
   });
+
+  // --- مدیریت آپلود تصاویر ---
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // --- وضعیت صفحه ---
   const [loading, setLoading] = useState(false);
@@ -52,12 +60,25 @@ export default function EditPurchaseRequestPage() {
   // دریافت اطلاعات اولیه + اطلاعات درخواست
   useEffect(() => {
     async function fetchInitialData() {
+      if (!slug) return;
+
       try {
         const [catsData, uns, provs, requestRes] = await Promise.all([
           lookupService.getCategories(),
           lookupService.getUnits(),
           lookupService.getProvinces(),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/purchase-requests/${slug}`).then((res) => res.json()),
+          fetch(`${API_BASE_URL}/purchase-requests/${slug}`, {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              Accept: "application/json",
+            },
+          }).then((res) => {
+            if (!res.ok) {
+              throw new Error("خطا در دریافت اطلاعات درخواست از سرور");
+            }
+            return res.json();
+          }),
         ]);
 
         const mainCats = catsData.categories || catsData;
@@ -66,9 +87,9 @@ export default function EditPurchaseRequestPage() {
         setUnits(uns);
         setProvinces(provs);
 
-        const request = requestRes.request;
+        const request = requestRes.request || requestRes.data || requestRes;
 
-        // پیدا کردن دسته اصلی از روی زیردسته با مقایسه ایمن نوع داده (تبدیل به عدد)
+        // پیدا کردن دسته اصلی از روی زیردسته
         let parentCategory = null;
         const reqCategoryId = Number(request.categoryId);
 
@@ -78,6 +99,12 @@ export default function EditPurchaseRequestPage() {
           );
 
           if (foundSub) {
+            parentCategory = cat;
+            setSubCategories(cat.children || []);
+            break;
+          }
+
+          if (Number(cat.id) === reqCategoryId) {
             parentCategory = cat;
             setSubCategories(cat.children || []);
             break;
@@ -97,17 +124,26 @@ export default function EditPurchaseRequestPage() {
           description: request.description || "",
         });
 
+        // لود تصاویر قبلی از دیتابیس
+        const initialImages = Array.isArray(request.images)
+          ? request.images.map((img, idx) => ({
+              url: typeof img === "string" ? img : img.url,
+              thumbnailUrl: typeof img === "string" ? img : (img.thumbnailUrl || img.url),
+              sortOrder: img.sortOrder !== undefined ? img.sortOrder : idx,
+            }))
+          : [];
+
+        setUploadedImages(initialImages);
+
       } catch (err) {
         console.error(err);
-        setError("خطا در دریافت اطلاعات درخواست");
+        setError(err.message || "خطا در دریافت اطلاعات درخواست");
       } finally {
         setInitLoading(false);
       }
     }
 
-    if (slug) {
-      fetchInitialData();
-    }
+    fetchInitialData();
   }, [slug]);
 
   // دریافت شهرها بر اساس استان انتخابی
@@ -160,6 +196,81 @@ export default function EditPurchaseRequestPage() {
     }));
 
     if (error) setError("");
+  };
+
+  // منطق آپلود تصاویر با apiFetch
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    if (uploadedImages.length + files.length > 10) {
+      setError("حداکثر می‌توانید 10 تصویر برای درخواست بارگذاری کنید.");
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setError("");
+
+      for (const file of files) {
+        if (!file.type.startsWith("image/")) {
+          setError("لطفاً فقط فایل تصویر انتخاب کنید.");
+          continue;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          setError("حجم هر تصویر باید کمتر از ۵ مگابایت باشد.");
+          continue;
+        }
+
+        const data = new FormData();
+        data.append("image", file);
+
+        const res = await apiFetch("/upload/purchase-request", {
+          method: "POST",
+          body: data,
+        });
+
+        if (res && res.url) {
+          setUploadedImages((prev) => [
+            ...prev,
+            {
+              url: res.url,
+              thumbnailUrl: res.thumbnailUrl || res.url,
+              sortOrder: prev.length,
+            },
+          ]);
+        }
+      }
+    } catch (err) {
+      setError(err.message || "خطا در بارگذاری تصویر روی سرور");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // حذف تصویر از لیست و از دیسک سرور
+  const handleRemoveImage = async (indexToRemove) => {
+    const targetImage = uploadedImages[indexToRemove];
+    if (!targetImage) return;
+
+    try {
+      await apiFetch("/upload/remove", {
+        method: "POST",
+        body: JSON.stringify({ url: targetImage.url }),
+      }).catch((err) => console.warn("حذف فیزیکی فایل با خطا مواجه شد:", err));
+
+      setUploadedImages((prev) =>
+        prev
+          .filter((_, idx) => idx !== indexToRemove)
+          .map((img, idx) => ({ ...img, sortOrder: idx }))
+      );
+    } catch (err) {
+      console.error("خطا در حذف تصویر", err);
+    }
   };
 
   // اعتبارسنجی مراحل
@@ -240,14 +351,13 @@ export default function EditPurchaseRequestPage() {
     setStep((prev) => prev - 1);
   };
 
-  // جلوگیری از submit با enter در فیلدهای غیر متنی طولانی
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") {
       e.preventDefault();
     }
   };
 
-  // ثبت نهایی
+  // ثبت نهایی فرم
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -262,21 +372,26 @@ export default function EditPurchaseRequestPage() {
       setLoading(true);
 
       const payload = {
-        title: formData.title,
-        categoryId: parseInt(formData.subCategoryId), // ارسال شناسه زیردسته به عنوان دسته‌بندی نهایی به بک‌اند
-        unitId: parseInt(formData.unitId),
+        title: formData.title.trim(),
+        categoryId: parseInt(formData.subCategoryId, 10),
+        unitId: parseInt(formData.unitId, 10),
         quantity: parseFloat(formData.quantity),
         budgetAmount: formData.budgetAmount
           ? parseFloat(formData.budgetAmount)
-          : null,
-        expiresInDays: parseInt(formData.expiresInDays),
-        provinceId: parseInt(formData.provinceId),
-        cityId: parseInt(formData.cityId),
-        description: formData.description,
+          : 0,
+        expiresInDays: parseInt(formData.expiresInDays, 10),
+        provinceId: parseInt(formData.provinceId, 10),
+        cityId: parseInt(formData.cityId, 10),
+        description: formData.description.trim(),
+        images: uploadedImages.map((img, index) => ({
+          url: img.url,
+          thumbnailUrl: img.thumbnailUrl || img.url,
+          sortOrder: index,
+        })),
       };
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/purchase-requests/${slug}`,
+        `${API_BASE_URL}/purchase-requests/${slug}`,
         {
           method: "PUT",
           headers: {
@@ -303,7 +418,6 @@ export default function EditPurchaseRequestPage() {
         } else {
           router.push("/profile/my-requests");
         }
-        
       }, 2000);
 
     } catch (err) {
@@ -442,6 +556,7 @@ export default function EditPurchaseRequestPage() {
                   label="مقدار مورد نیاز *"
                   name="quantity"
                   type="number"
+                  step="any"
                   value={formData.quantity}
                   onChange={handleChange}
                   placeholder="مثلاً: 50"
@@ -570,7 +685,7 @@ export default function EditPurchaseRequestPage() {
 
           {/* مرحله ۴ */}
           {step === 4 && (
-            <div className="space-y-4 animate-fadeIn">
+            <div className="space-y-5 animate-fadeIn">
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -620,6 +735,72 @@ export default function EditPurchaseRequestPage() {
                 />
               </div>
 
+              {/* بخش آپلود تصاویر */}
+              <div className="space-y-3 pt-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  تصاویر کالا یا پیش‌فاکتور (اختیاری - حداکثر 10 تصویر)
+                </label>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  {uploadedImages.map((img, index) => {
+                    const displaySrc = img.url.startsWith("http")
+                      ? img.url
+                      : `${API_BASE_URL.replace("/api", "")}${img.url}`;
+
+                    return (
+                      <div
+                        key={img.url || index}
+                        className="relative w-20 h-20 rounded-lg border border-gray-200 overflow-hidden group bg-gray-50"
+                      >
+                        <img
+                          src={displaySrc}
+                          alt={`تصویر شماره ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-90 hover:opacity-100 transition-opacity"
+                          title="حذف تصویر"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {uploadedImages.length < 10 && (
+                    <label className="w-20 h-20 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50/50 transition-colors">
+                      <svg
+                        className="w-6 h-6 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      <span className="text-[10px] text-gray-500 mt-1">
+                        {uploadingImage ? "در حال آپلود..." : "افزودن عکس"}
+                      </span>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={uploadingImage}
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
             </div>
           )}
 
@@ -642,7 +823,7 @@ export default function EditPurchaseRequestPage() {
                 variant="outline"
                 onClick={handleBack}
                 className="w-1/3 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg"
-                disabled={loading}
+                disabled={loading || uploadingImage}
               >
                 بازگشت
               </Button>
@@ -654,6 +835,7 @@ export default function EditPurchaseRequestPage() {
               <Button
                 type="button"
                 onClick={handleNext}
+                disabled={loading || uploadingImage}
                 className="w-2/3 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
               >
                 مرحله بعد
@@ -662,6 +844,7 @@ export default function EditPurchaseRequestPage() {
               <Button
                 type="submit"
                 loading={loading}
+                disabled={uploadingImage}
                 className="w-2/3 py-2.5 text-white bg-green-600 hover:bg-green-700 rounded-lg"
               >
                 ذخیره تغییرات

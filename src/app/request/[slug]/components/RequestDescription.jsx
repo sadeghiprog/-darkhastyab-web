@@ -2,7 +2,7 @@
 
 export default function RequestDescription({ description }) {
   return (
-    <div className="mt-6 rounded-3xl border border-slate-100 bg-slate-50/60 p-5">
+    <div className="mt-6 rounded-3xl border border-slate-100 bg-slate-50/60 p-5 m-3">
       <h2 className="mb-3 text-sm font-black text-slate-800">
         توضیحات درخواست
       </h2>

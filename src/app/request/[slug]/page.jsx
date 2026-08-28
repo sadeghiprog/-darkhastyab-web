@@ -2,6 +2,17 @@ import { notFound } from "next/navigation";
 import RequestDetailsContent from "./RequestDetailsContent";
 import { API_BASE } from "./utils/constants";
 
+// تابع کمکی برای ساخت آدرس کامل تصویر برای سئو
+function getFullImageUrl(imagePath) {
+  if (!imagePath) return null;
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return imagePath;
+  }
+  const avatarBase = (process.env.NEXT_PUBLIC_AVATAR_URL || "https://darkhastyab.com").replace(/\/+$/, "");
+  const cleanPath = imagePath.startsWith("/") ? imagePath : `/${imagePath}`;
+  return `${avatarBase}${cleanPath}`;
+}
+
 // تابع کمکی برای واکشی داده‌ها در سمت سرور
 async function getRequestBySlug(slug) {
   try {
@@ -19,11 +30,9 @@ async function getRequestBySlug(slug) {
   }
 }
 
-// تولید متادیتا با رعایت Promise بودن params
+// تولید متادیتا داینامیک همراه با سئوی تصویر اول
 export async function generateMetadata({ params }) {
-  // در Next.js جدید باید params را await کنید
-  const { slug } = await params; 
-  
+  const { slug } = await params;
   const request = await getRequestBySlug(slug);
 
   if (!request) {
@@ -33,38 +42,96 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = request.title || "جزئیات درخواست";
+  const title = `${request.title} | درخواست یاب`;
   const description =
-    request.description?.slice(0, 160) ||
-    "جزئیات این درخواست را در درخواست یاب مشاهده کنید.";
+    request.description?.replace(/(\r\n|\n|\r)/gm, " ").slice(0, 160) ||
+    "جزئیات این درخواست خرید را در درخواست یاب مشاهده کنید.";
+  const canonicalUrl = `https://darkhastyab.com/request/${slug}`;
+
+  // استخراج تصویر اول جهت ایندکس در گوگل و شبکه‌های اجتماعی
+  const firstImage = request.images?.[0];
+  const primaryImageUrl = getFullImageUrl(firstImage?.url);
+
+  const ogImages = primaryImageUrl
+    ? [
+        {
+          url: primaryImageUrl,
+          width: 1200,
+          height: 630,
+          alt: request.title,
+        },
+      ]
+    : [
+        {
+          url: "https://darkhastyab.com/images/og-default.jpg",
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ];
 
   return {
     title,
     description,
     alternates: {
-      canonical: `https://darkhastyab.com/request/${slug}`, // آدرس کامل سئو بهتری دارد
+      canonical: canonicalUrl,
     },
     openGraph: {
       title,
       description,
-      url: `/request/${slug}`,
-      siteName: "Darkhastyab",
+      url: canonicalUrl,
+      siteName: "Darkhastyab | درخواست یاب",
       locale: "fa_IR",
       type: "article",
+      images: ogImages,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ogImages.map((img) => img.url),
     },
   };
 }
 
 // کامپوننت اصلی صفحه
 export default async function RequestDetailsPage({ params }) {
-  // رفع خطای: params is a Promise
   const { slug } = await params;
-
   const request = await getRequestBySlug(slug);
 
   if (!request) {
     notFound();
   }
 
-  return <RequestDetailsContent slug={slug} initialRequest={request} />;
+  // ایجاد Structured Data (JSON-LD) برای ایندکس اختصاصی تصویر و صفحه در گوگل
+  const firstImage = request.images?.[0];
+  const primaryImageUrl = getFullImageUrl(firstImage?.url);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: request.title,
+    description: request.description || request.title,
+    ...(primaryImageUrl && {
+      image: [primaryImageUrl],
+    }),
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "IRR",
+      price: request.targetPrice || "0",
+      availability: "https://schema.org/InStock",
+      url: `https://darkhastyab.com/request/${slug}`,
+    },
+  };
+
+  return (
+    <>
+      {/* درج داده‌های ساختاریافته برای ربات‌های گوگل */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <RequestDetailsContent slug={slug} initialRequest={request} />
+    </>
+  );
 }
