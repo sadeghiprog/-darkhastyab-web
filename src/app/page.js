@@ -5,6 +5,7 @@ import FilterBar from "../components/common/FilterBar";
 import StatsCards from "../components/home/StatsCards";
 import LatestRequestsSection from "../components/home/LatestRequestsSection";
 import TopSuppliersSection from "../components/home/TopSuppliersSection";
+import AppDownloadSection from "../components/home/AppDownloadSection";
 
 const SITE_URL = "https://darkhastyab.com";
 
@@ -151,6 +152,15 @@ export default function HomePage() {
         aria-label="جدیدترین درخواست‌های خرید"
       >
         <LatestRequestsSection />
+      </section>
+
+      <section
+        className="relative z-10 mt-10 w-full px-4 sm:px-6 lg:px-8"
+        aria-label="دانلود اپلیکیشن درخواست یاب"
+      >
+        <div className="mx-auto max-w-7xl">
+          <AppDownloadSection />
+        </div>
       </section>
 
       {/* تأمین‌کنندگان برتر */}

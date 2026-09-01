@@ -1,13 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import Link from "next/link";
-import {
-  MapPin,
-  Wallet,
-  Clock3,
-  FolderKanban,
-  Image as ImageIcon,
-} from "lucide-react";
+import { MapPin, Wallet, FolderKanban, Image as ImageIcon } from "lucide-react";
 
 const PLACEHOLDER_IMAGE = "/uploads/purchase-requests/thumbs/no-image.webp";
 
@@ -23,6 +17,18 @@ function getImageUrl(path) {
   return `${baseUrl}${cleanPath}`;
 }
 
+function InfoItem({ icon: Icon, label, value }) {
+  return (
+    <div className="flex shrink-0 max-w-full items-center gap-1.5 text-slate-500">
+      <Icon size={14} className="shrink-0 text-cyan-600" />
+      <span className="shrink-0 text-xs text-slate-400">{label}:</span>
+      <span className="max-w-full truncate text-sm font-bold text-slate-700">
+        {value}
+      </span>
+    </div>
+  );
+}
+
 export default function HorizontalRequestCardPremium({ request }) {
   const [imageError, setImageError] = useState(false);
 
@@ -32,8 +38,6 @@ export default function HorizontalRequestCardPremium({ request }) {
   const href = `/request/${request?.slug || ""}`;
 
   const isExpired = request?.isExpired;
-  const daysRemaining =
-    typeof request?.daysRemaining === "number" ? request.daysRemaining : null;
 
   // پردازش آدرس تصویر
   const images = Array.isArray(request?.images) ? request.images : [];
@@ -41,91 +45,71 @@ export default function HorizontalRequestCardPremium({ request }) {
   const primaryImage = getImageUrl(rawImagePath);
   const imageSrc = !imageError && primaryImage ? primaryImage : PLACEHOLDER_IMAGE;
 
+  const categoryName = request?.category?.name || request?.category?.title || null;
+
   return (
     <Link href={href} className="block">
-      <div className="group w-full rounded-2xl border border-slate-200/90 bg-white p-2 sm:p-2.5 pr-1 sm:pr-1.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md cursor-pointer">
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          
-          {/* نوار گرادینت کناری با حداقل فاصله */}
-          <div className="h-24 sm:h-28 w-1 rounded-full bg-gradient-to-b from-cyan-400 to-blue-500 shrink-0" />
+      <div className="group flex w-full gap-3 rounded-2xl border border-slate-200/90 bg-white p-2.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md">
+        {/* نوار گرادینت کناری */}
+        <div className="w-1 shrink-0 self-stretch rounded-full bg-gradient-to-b from-cyan-400 to-blue-500" />
 
-          {/* باکس عکس بزرگ‌تر */}
-          <div className="relative h-24 w-24 sm:h-28 sm:w-28 shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-100">
-            <img
-              src={imageSrc}
-              alt={request?.title || "درخواست خرید"}
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-              onError={() => setImageError(true)}
+        {/* باکس عکس */}
+        <div className="relative aspect-square w-28 shrink-0 self-center overflow-hidden rounded-xl border border-slate-100 bg-slate-100 sm:w-32">
+          <img
+            src={imageSrc}
+            alt={request?.title || "درخواست خرید"}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+            onError={() => setImageError(true)}
+          />
+
+          {images.length > 1 && (
+            <div className="absolute bottom-1.5 left-1.5 z-10">
+              <div className="flex items-center gap-1 rounded-lg bg-slate-900/70 px-2 py-1 text-[11px] font-bold text-white backdrop-blur-sm">
+                <ImageIcon size={11} />
+                <span>{images.length}</span>
+              </div>
+            </div>
+          )}
+
+          {isExpired && (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50">
+              <span className="text-xs font-bold text-white">منقضی</span>
+            </div>
+          )}
+        </div>
+
+        {/* محتوا: عنوان چسبیده به بالا، اطلاعات چسبیده به پایین */}
+        <div className="flex min-w-0 flex-1 flex-col justify-between gap-2 py-1">
+          {/* عنوان + بج دسته‌بندی به‌صورت inline؛ اگر جا نبود خودکار می‌ره زیر عنوان */}
+          <h3 className="line-clamp-2 min-w-0 text-base font-extrabold leading-snug text-slate-800 transition-colors group-hover:text-cyan-700">
+            {request?.title || "بدون عنوان"}
+            {categoryName && (
+              <span className="ms-2 inline-flex translate-y-[-1px] items-center gap-1 rounded-lg bg-cyan-50 px-2 py-0.5 align-middle text-xs font-semibold text-cyan-700">
+                <FolderKanban size={11} />
+                <span className="max-w-[110px] truncate">{categoryName}</span>
+              </span>
+            )}
+          </h3>
+
+          {/* بودجه و محل تحویل: اگر جا نبود، کامل می‌رن به خط بعد */}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1.5">
+            <InfoItem
+              icon={Wallet}
+              label="بودجه"
+              value={
+                request?.budgetAmount
+                  ? `${formatNumber(request.budgetAmount)} تومان`
+                  : "توافقی"
+              }
             />
 
-            {images.length > 1 && (
-              <div className="absolute bottom-1 left-1 z-10">
-                <div className="flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-900/70 text-white backdrop-blur-sm">
-                  <ImageIcon size={10} />
-                  <span>{images.length}</span>
-                </div>
-              </div>
-            )}
+            <InfoItem
+              icon={MapPin}
+              label="تحویل"
+              value={request?.province?.name || "—"}
+            />
           </div>
-
-          {/* کانتینر محتوا: کشیده شده به اندازه ارتفاع عکس با بیشترین فاصله بین بالا و پایین */}
-          <div className="min-w-0 flex-1 flex flex-col justify-between h-24 sm:h-28 py-0.5">
-            
-            {/* عنوان: چسبیده به بالا */}
-            <h3 className="line-clamp-2 text-sm sm:text-base font-extrabold text-slate-800 leading-snug transition-colors group-hover:text-cyan-700">
-              {request?.title || "بدون عنوان"}
-            </h3>
-
-            {/* بخش اطلاعات: چسبیده به پایین (گرید ۲ ستونه ۲ ردیفه / ریسپانسیو) */}
-            <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              
-              {/* بودجه */}
-              <div className="flex items-center gap-1.5 text-slate-500 min-w-0">
-                <Wallet size={13} className="text-cyan-600 shrink-0" />
-                <span className="text-slate-400 text-[11px]">بودجه:</span>
-                <span className="font-black text-slate-800 truncate">
-                  {formatNumber(request?.budgetAmount)} تومان
-                </span>
-              </div>
-
-              {/* دسته بندی */}
-              <div className="flex items-center gap-1.5 text-slate-500 min-w-0">
-                <FolderKanban size={13} className="text-cyan-600 shrink-0" />
-                <span className="text-slate-400 text-[11px]">دسته:</span>
-                <span className="font-bold text-slate-700 truncate">
-                  {request?.category?.name || request?.category?.title || "—"}
-                </span>
-              </div>
-
-              {/* تحویل (استان / شهر) */}
-              <div className="flex items-center gap-1.5 text-slate-500 min-w-0">
-                <MapPin size={13} className="text-cyan-600 shrink-0" />
-                <span className="text-slate-400 text-[11px]">تحویل:</span>
-                <span className="font-bold text-slate-700 truncate">
-                  {request?.province?.name || "—"}
-                </span>
-              </div>
-
-              {/* انقضا */}
-              <div className="flex items-center gap-1.5 text-slate-500 min-w-0">
-                <Clock3 size={13} className="text-cyan-600 shrink-0" />
-                <span className="text-slate-400 text-[11px]">انقضا:</span>
-                <span className="font-bold text-slate-700 truncate">
-                  {isExpired
-                    ? "منقضی شده"
-                    : daysRemaining > 10000
-                    ? "بدون انقضا"
-                    : daysRemaining !== null
-                    ? `${formatNumber(daysRemaining)} روز`
-                    : "نامشخص"}
-                </span>
-              </div>
-
-            </div>
-
-          </div>
-
         </div>
       </div>
     </Link>

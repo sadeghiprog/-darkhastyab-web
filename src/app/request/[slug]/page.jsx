@@ -2,6 +2,10 @@ import { notFound } from "next/navigation";
 import RequestDetailsContent from "./RequestDetailsContent";
 import { API_BASE } from "./utils/constants";
 
+const DEFAULT_OG_IMAGE = "https://darkhastyab.com/images/og-default.jpg";
+const DEFAULT_PRODUCT_IMAGE =
+  "https://darkhastyab.com/uploads/purchase-requests/thumbs/no-image.webp";
+
 // تابع کمکی برای ساخت آدرس کامل تصویر برای سئو
 function getFullImageUrl(imagePath) {
   if (!imagePath) return null;
@@ -50,25 +54,16 @@ export async function generateMetadata({ params }) {
 
   // استخراج تصویر اول جهت ایندکس در گوگل و شبکه‌های اجتماعی
   const firstImage = request.images?.[0];
-  const primaryImageUrl = getFullImageUrl(firstImage?.url);
+  const primaryImageUrl = getFullImageUrl(firstImage?.url) || DEFAULT_OG_IMAGE;
 
-  const ogImages = primaryImageUrl
-    ? [
-        {
-          url: primaryImageUrl,
-          width: 1200,
-          height: 630,
-          alt: request.title,
-        },
-      ]
-    : [
-        {
-          url: "https://darkhastyab.com/images/og-default.jpg",
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ];
+  const ogImages = [
+    {
+      url: primaryImageUrl,
+      width: 1200,
+      height: 630,
+      alt: request.title,
+    },
+  ];
 
   return {
     title,
@@ -105,16 +100,15 @@ export default async function RequestDetailsPage({ params }) {
 
   // ایجاد Structured Data (JSON-LD) برای ایندکس اختصاصی تصویر و صفحه در گوگل
   const firstImage = request.images?.[0];
-  const primaryImageUrl = getFullImageUrl(firstImage?.url);
+  // همیشه یک تصویر معتبر و مطلق برمی‌گردونیم؛ حتی وقتی درخواست عکس نداره
+  const primaryImageUrl = getFullImageUrl(firstImage?.url) || DEFAULT_PRODUCT_IMAGE;
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: request.title,
     description: request.description || request.title,
-    ...(primaryImageUrl && {
-      image: [primaryImageUrl],
-    }),
+    image: [primaryImageUrl],
     offers: {
       "@type": "Offer",
       priceCurrency: "IRR",
