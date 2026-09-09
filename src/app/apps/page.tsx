@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 const APPS = [
   {
@@ -85,16 +84,14 @@ export default function AppsDownloadPage() {
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-cyan-500/10">
                 {app.icon ? (
-                  <Image
-                    src={app.icon}
-                    alt={app.name}
-                    width={56}
-                    height={56}
-                    className="h-14 w-14 object-contain"
-                  />
-                ) : (
-                  <AndroidIcon className="h-7 w-7 text-cyan-400" />
-                )}
+                    <img
+                        src={app.icon}
+                        alt={app.name}
+                        className="h-14 w-14 object-contain"
+                    />
+                    ) : (
+                    <AndroidIcon className="h-7 w-7 text-cyan-400" />
+                    )}
               </div>
 
               <div>
