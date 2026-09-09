@@ -1,7 +1,4 @@
-import React from "react";
-
-const APP_DOWNLOAD_URL =
-  "https://darkhastyab.com/uploads/application/v1/app-release.apk";
+import Link from "next/link";
 
 function DownloadIcon({ className = "h-5 w-5" }) {
   return (
@@ -60,14 +57,13 @@ export default function AppDownloadSection() {
           </div>
         </div>
 
-        
-         <a href={APP_DOWNLOAD_URL}
-          download
+        <Link
+          href="/apps"
           className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 px-7 py-3.5 text-sm font-black text-white shadow-lg shadow-cyan-500/20 transition hover:from-cyan-400 hover:to-blue-400 active:scale-[0.98] sm:w-auto"
         >
           <DownloadIcon className="h-5 w-5" />
-          <span>دانلود اپلیکیشن (APK)</span>
-        </a>
+          <span>مشاهده و دانلود اپلیکیشن‌ها</span>
+        </Link>
       </div>
     </div>
   );
