@@ -385,8 +385,8 @@ export default function CreatePurchaseRequestPage() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">
             {canCreateForCustomer
-              ? "ثبت درخواست خرید جدید (پنل مدیریت / پارتنر)"
-              : "ثبت درخواست خرید جدید"}
+              ? "ثبت درخواست جدید (پنل مدیریت / پارتنر)"
+              : "ثبت درخواست جدید"}
           </h1>
 
           {/* نوار مراحل */}

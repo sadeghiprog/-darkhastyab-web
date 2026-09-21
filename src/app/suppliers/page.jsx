@@ -60,6 +60,23 @@ export default function SuppliersPage() {
     setPage(1);
   }
 
+  // پنجره‌ی متحرک شماره صفحات: حداکثر ۵ شماره، دور صفحه‌ی جاری
+  function getVisiblePageNumbers(currentPage, total, maxVisible = 5) {
+    if (total <= maxVisible) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = start + maxVisible - 1;
+
+    if (end > total) {
+      end = total;
+      start = end - maxVisible + 1;
+    }
+
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }
+
   const showHero = page === 1 && !search;
 
   return (
@@ -169,22 +186,19 @@ export default function SuppliersPage() {
               </button>
 
               <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }).slice(0, 5).map((_, index) => {
-                  const pageNumber = index + 1;
-                  return (
-                    <button
-                      key={pageNumber}
-                      onClick={() => setPage(pageNumber)}
-                      className={`h-7 w-7 rounded-lg text-xs font-semibold transition ${
-                        page === pageNumber
-                          ? "bg-slate-800 text-white"
-                          : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
-                      }`}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                })}
+                {getVisiblePageNumbers(page, totalPages).map((pageNumber) => (
+                  <button
+                    key={pageNumber}
+                    onClick={() => setPage(pageNumber)}
+                    className={`h-7 w-7 rounded-lg text-xs font-semibold transition ${
+                      page === pageNumber
+                        ? "bg-slate-800 text-white"
+                        : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
               </div>
 
               <button
