@@ -42,13 +42,13 @@ export default function Footer() {
             </div>
 
             <div className="flex flex-col gap-4 sm:items-end">
-              <a
+              {/* <a
                 href="tel:09190555510"
                 className="inline-flex items-center justify-center gap-2 self-start rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:text-slate-900 sm:self-auto"
               >
                 <Phone size={15} className="text-slate-500" />
-                <span>پشتیبانی 09190555510</span>
-              </a>
+                <span>پشتیبانی0</span>
+              </a> */}
 
               <div className="flex flex-wrap items-center gap-3">
                 {/* بخش اینماد */}

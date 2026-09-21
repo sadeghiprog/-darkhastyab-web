@@ -69,11 +69,11 @@ function DirectContactBox({
   const buttonText = requestContactLoading
     ? "در حال دریافت..."
     : !isLoggedIn
-    ? "ورود و دریافت تماس"
+    ? " ورود و تماس با **** *** **09  "
     : loadingRequestAccess
     ? "در حال بررسی..."
     : hasAccess
-    ? "مشاهده اطلاعات تماس"
+    ? "تماس **** *** **09"
     : "دریافت اطلاعات تماس";
 
   return (

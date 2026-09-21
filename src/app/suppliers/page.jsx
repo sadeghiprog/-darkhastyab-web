@@ -4,21 +4,46 @@ import { useEffect, useState } from "react";
 import SupplierCard from "../../components/common/SupplierCard";
 import Link from "next/link";
 
+const PAGE_LIMIT = 20;
+
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [sort, setSort] = useState("newest"); // "newest" | "rating"
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
+  // دیبانس جستجو: بعد از ۴۰۰ میلی‌ثانیه سکون تایپ، جستجو اعمال و صفحه ریست می‌شود
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(1);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   useEffect(() => {
-    fetchSuppliers(page);
-  }, [page]);
+    fetchSuppliers(page, sort, search);
+  }, [page, sort, search]);
 
-  async function fetchSuppliers(currentPage) {
+  async function fetchSuppliers(currentPage, currentSort, currentSearch) {
     try {
       setLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage,
+        limit: PAGE_LIMIT,
+        sort: currentSort,
+      });
+
+      if (currentSearch) {
+        params.set("search", currentSearch);
+      }
+
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/admin/suppliers?page=${currentPage}&limit=9`
+        `${process.env.NEXT_PUBLIC_API_URL}/admin/suppliers?${params.toString()}`
       );
       const data = await res.json();
       setSuppliers(data.suppliers || []);
@@ -30,7 +55,12 @@ export default function SuppliersPage() {
     }
   }
 
-  const showHero = page === 1;
+  function handleSortChange(newSort) {
+    setSort(newSort);
+    setPage(1);
+  }
+
+  const showHero = page === 1 && !search;
 
   return (
     <div className="min-h-screen bg-gray-50 text-right" dir="rtl">
@@ -45,10 +75,10 @@ export default function SuppliersPage() {
       {showHero && (
         <section className="relative overflow-hidden bg-slate-50 border-b border-gray-200/80">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05),transparent_70%)]" />
-          
+
           <div className="relative max-w-4xl mx-auto px-6 py-6 md:py-8 flex flex-col items-center text-center">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-600 border border-blue-100">
-             درخاست یاب شبکه تأمین‌کنندگان بازار 
+             درخاست یاب شبکه تأمین‌کنندگان بازار
             </span>
 
             <h1 className="mt-3 text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">
@@ -74,7 +104,7 @@ export default function SuppliersPage() {
       )}
 
       <section className="max-w-7xl mx-auto px-6 py-6">
-        <div className="flex items-center justify-between gap-2 mb-5 pb-3 border-b border-gray-200">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 pb-3 border-b border-gray-200">
           <div>
             <h2 className="text-base md:text-lg font-bold text-gray-900">
               لیست تأمین‌کننده‌ها
@@ -84,6 +114,29 @@ export default function SuppliersPage() {
             </p>
           </div>
 
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            {/* جستجو: نام، تخصص، رزومه */}
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="جستجو در نام، تخصص یا رزومه..."
+              className="h-8 w-full sm:w-64 rounded-lg border border-gray-300 bg-white px-3 text-xs text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+
+            {/* سورت */}
+            <select
+              value={sort}
+              onChange={(e) => handleSortChange(e.target.value)}
+              className="h-8 rounded-lg border border-gray-300 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="newest">جدیدترین</option>
+              <option value="rating">بالاترین امتیاز</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mb-3">
           <div className="text-xs text-gray-400">
             صفحه {page} از {totalPages}
           </div>

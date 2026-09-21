@@ -71,6 +71,7 @@ export default function Header() {
     { title: "تأمین‌کنندگان", href: "/suppliers" },
     { title: "تعرفه ها", href: "/tariffs" },
     { title: "راهنما و قوانین", href: "/help" },
+    { title: "اپلیکیشن ها", href: "/apps" },
     { title: "تماس با ما", href: "/contact" },
   ];
 

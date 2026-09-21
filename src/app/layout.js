@@ -45,10 +45,14 @@ export const metadata = {
 /**
  * پیکربندی نمایش اولیه در مرورگر
  */
+/**
+ * پیکربندی نمایش اولیه در مرورگر
+ */
 export const viewport = {
   themeColor: "#0f172a", // رنگ سرمه‌ای متناسب با هویت برند
   width: "device-width",
   initialScale: 1,
+  colorScheme: "light", // جلوگیری از تیره/کم‌رنگ شدن خودکار فرم‌ها توسط مرورگر (dark mode اجباری بعضی دیوایس‌ها)
 };
 
 export default function RootLayout({ children }) {
